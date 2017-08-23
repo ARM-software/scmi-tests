@@ -1,0 +1,6 @@
+**/test_agent/objects/
+**/objects
+scmi_test_agent
+**/output
+**/platform_output
+lib*.a
