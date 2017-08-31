@@ -6,12 +6,12 @@ Table of Contents:
 - [Introduction](#introduction)
 - [Host Machine Requirements and Tools](#host-machine-requirements-and-tools)
 - [Getting SCMI Test Suite source code](#getting-scmi-test-suite-source-code)
-- [Understanding the SCMI Test Suite design and library of tests](#understanding-the-scmi-test-suite-design-and-library-of-tests)
-- [Building the SCMI Test Suite](#building-the-scmi-test-suite)
+- [Understanding the SCMI Test Suite design and library of tests](#test-suite-design-and-library-of-tests)
+- [Building the SCMI Test Suite](#build-steps)
   * [Build the test suite as a library](#build-the-test-suite-as-a-library)
   * [Build for self test mocker platform](#build-for-self-test-mocker-platform)
   * [Build for arm juno platform](#build-for-arm-juno-platform)
-- [Executing the test suite](#executing-the-test-suite)
+- [Executing the test suite](#test-suite-execution)
   * [Running the test agent on host machine](#running-the-test-agent-on-host-machine)
   * [Running the test agent on juno platform](#running-the-test-agent-on-juno-platform)
 - [Test Execution Report](#test-execution-report)
@@ -19,12 +19,15 @@ Table of Contents:
 Introduction
 -------
 
-This document outlines how to fetch, adapt and build SCMI test suite. Examples to build and run the test suite for a 'self test mocker' platform on host machine and Juno ARM Development Platform (ADP) is provided as reference.
+This document outlines how to fetch, adapt and build SCMI test suite. The steps to build and run the test suite for a 'self test mocker' platform on host machine and Juno ARM Development Platform (ADP) are provided as reference.
+
+## Prerequisites
 
 Host Machine Requirements and Tools
 -------
 
-The software has been built on Ubuntu 14.04 LTS (64-bit). Packages used for building the software were installed from that distribution unless otherwise specified. Eventhough we have tested this only on Ubuntu 14.04 we expect it to work on later versions of Ubuntu.
+The software has been built on Ubuntu 14.04 LTS (64-bit).
+Packages used for building the software were installed from that distribution unless otherwise specified. Eventhough we have tested this only on Ubuntu 14.04 we expect it to work on later versions of Ubuntu.
 
 Install the following tools with the command:
 
@@ -39,26 +42,29 @@ Download the SCMI Test Suite source code from Github:
 
 >`git clone https://github.com/ARM-software/scmi-tests`
 
-Understanding the SCMI Test Suite design and library of tests
+Test Suite design and library of tests
 -------
 
-The SCMI test suite design can be found at [SCMI Test Suite Design][SCMI Test Suite Design]. This provides an overview of the design considerations, the interfaces that needs to be implemented by the user to adapt this test suite for their own platform and the overall code organisation. Some control flows are also detailed to better explain the execution flow.
+For details on the SCMI test suite design, see [SCMI Test Suite Design][SCMI Test Suite Design]. The design document provides an overview of the design considerations, the interfaces that needs to be implemented by the user to adapt this test suite for their own platform and the overall code organisation. Some control flows are also detailed to describe the execution flow.
 
-The library of tests included in the test suite is detailed in a test specification at [SCMI Test Specification][SCMI Test Specification]
+For details on the library of tests included in the test suite, see [SCMI Test Specification][SCMI Test Specification]
 
-Building the SCMI Test Suite
+Build steps
 -------
+
+The test suite can be built either as a library or as an OSPM agent running on Linux.
 
 ### Build the test suite as a library
 
-The test can be built as a library which the user can link to their execution environment to launch the test agent to run the tests on the user platform.
-Issue the following command to build the test suite as a library:
+The tests can be built as a library which the user can link to their execution environment and launch the test agent.
+
+To start the build, perform the following steps.
 
 >`CROSS_COMPILE=<path/to/your/AArch64 compiler>/aarch64-linux-gnu- make clean`
 >
 >`CROSS_COMPILE=<path/to/your/AArch64 compiler>/aarch64-linux-gnu- make PROTOCOLS=<comma separated protocol list>`
 
-This will build libscmi_test.a library which can be linked and used in your test execution environment
+The output of the make command is libscmi_test.a library, which can be linked and used in your test execution environment
 
 If the user does not specify PROTOCOLS variable when invoking make command, by default Base Protocol test library alone is generated.
 
@@ -66,39 +72,39 @@ If the user does not specify PROTOCOLS variable when invoking make command, by d
 >
 >`CROSS_COMPILE=<path/to/your/AArch64 compiler>/aarch64-linux-gnu- make PROTOCOLS=base,clock,power,system_power,performance,sensor`
 
-This will build the library to include tests for all the specified protocols. Do note that the comma separated values are the subfolder names found in `<test suite clone location>/protocols` folder.
-If there are memory constraints on the platform fewer tests can be packed by modifying the PROTOCOLS variable.
+The output of this make commans is the libscmi_test.a library which includes tests for all the specified protocols. The comma separated values are the subfolder names found in `<test suite clone location>/protocols` folder.
+If there are memory constraints on the platform, fewer tests can be included by modifying the PROTOCOLS variable.
 
-### Build for self test mocker platform
+### Build the test suite as an OSPM agent
 
-In order to self test the test framework and test libraries easily a mocker platform is implemented which just provides some fake responses to the SCMI commands issued by the test suite. The user can build the mocker platform with the following command:
+#### Build for self test mocker platform
+
+A self test framework is implemented on a mocker platform, which provides a fake response to the SCMI commands issued by the test suite. To build the library libscmi_test.a for the mocker platform, follow these steps:
 
 >`make clean`
 >
 >`make PLAT=self_test/mocker PROTOCOLS=base,clock,performance,power,system_power,sensor`
 
-This will build the library libscmi_test.a.
+Do note that the mocker platform is to enable 'testing of the test framework' only. When the test library is extended to support new protocols or commands, it is **not** necessary to support the same in the mocker platform, unless it is warranted for testing the framework changes.
 
-Do note that this mocker platform is to enable 'testing of the test framework' only. When the test library is extended to support new protocols or commands, it is **not** necessary to support the same in the mocker platform, unless it is warranted for testing the framework changes.
+#### Build for arm juno platform
 
-### Build for arm juno platform
-
-In order to allow the adopters of SCMI test suite to have an reference implementation and example of the needed porting for a real platform Juno ADP is chosen. This reference implementation builds the scmi test suite as an OSPM agent running from Linux using publicly available mailbox test driver interface. The user can build the test suite for Juno platform with the following command:
+A reference implementation for Juno ADP is provided in the suite. In addition to building the library the build also enables the scmi test suite to run as an OSPM agent running from Linux using publicly available mailbox test driver interface. The user can build the test suite for Juno platform with the following command:
 
 >`CROSS_COMPILE=<path/to/your/AArch64 compiler>/aarch64-linux-gnu- make clean`
 >
 >`CROSS_COMPILE=<path/to/your/AArch64 compiler>/aarch64-linux-gnu- make PLAT=arm/juno PROTOCOLS=base,clock,power,performance,system_power,sensor`
 
-This will build the library libscmi_test.a  and additionally the executable scmi_test_agent which links to the test suite library.
+This output of the build is an executable scmi_test_agent which links to the test suite library.
 
 It is important to note that user will have to rebuild the Linux kernel and device trees for Juno following the [Guide to test SCMI on Juno][Testing On Juno].
 
-Executing the test suite
+Test suite Execution
 -------
 
 ### Running the test agent on host machine
 
-In order to run the test suite on the host machine issue the command:
+To run the test suite on the host machine issue the command:
 
 >`./scmi_test_agent`
 
@@ -106,14 +112,14 @@ For the self_test/mocker platform the test logs are dumped on the console itself
 
 ### Running the test agent on juno platform
 
-In order to run the test suite on the Juno platform issue the following command from the place where the test executable is packaged in the filesystem which was booted on Juno:
+To run the test suite on the Juno platform, issue the following command in the filesystem which is mounted on Juno:
 
 >`cd <path/to/executable in filesystem>`
 >
 >`./scmi_test_agent -board <variant>`
 
 Here `<variant>` can be r0, r1 or r2.
-For the arm/juno platform the test logs are captured in a report file at the same location where the test suite is executed with the name arm\_scmi\_test\_log.txt
+The test logs are captured in a report file arm\_scmi\_test\_log.txt in the same directory as the executable.
 
 Test Execution Report
 -------
@@ -249,7 +255,7 @@ Protocol Base.-
 		[base]-{BASE_NOTIFY_ERRORS}-postcondition_reg_err_notification-01: CONFORMANT
 ```
 
-The test report list results per test case which is organised as a collection within individual test suites in a protocol. For every test case the following verification steps happen:
+The test report lists results per test case. The tests are organised as a collection within individual test suites in a protocol. For every test case the following verification steps happen:
 
 `Message Header`: The message header received from the platform is checked against what was in the send command. This check cannot be skipped.
 
@@ -257,7 +263,7 @@ The test report list results per test case which is organised as a collection wi
 
 `Return Value - Others if relevant`: The remaining of the return values for a command response is valid based on status return value. Checks will be performed only if status return value returned SUCCESS and expected values were given by user or captured in the test library. If not, the returned values will be reported as 'INFO'.
 
-Each individual check deliveres a PASS/FAIL verdict unless marked as INFO. A test case will be reported NON CONFORMANT if any of the checks returns FAIL in a test case. Otherwise it returns a CONFORMANT verdict. Any checks with INFO status do not influence the final veridict.
+Each individual check deliveres a PASS/FAIL verdict unless marked as INFO. A test case will be reported as NON CONFORMANT if any of the checks return FAIL in a test case. Otherwise it returns a CONFORMANT status. Any checks with INFO status do not influence the final result.
 
 - - - - - - - - - - - - - - - - -
 
