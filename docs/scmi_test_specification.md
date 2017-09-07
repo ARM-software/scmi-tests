@@ -1,4 +1,4 @@
-**SCMI Tests - Test Specification**
+**SCMI Tests - Scenario document**
 ===================================
 Table of Contents:
 - [Introduction](#introduction)
@@ -12,10 +12,11 @@ Table of Contents:
 
 Introduction
 -------
-This outlines the test specification detailing the individual test cases designed and implemented as part of current version of the scmi test suite.
+This document outlines the test scenarios and how individual test cases are implemented in the current version of the SCMI test suite.
 
 General Rules
 -------
+In writing the tests, the below rules have been followed.
 
 > The test case identifiers **must** follow a common naming pattern as [*protocol*]-{*command*}-*descriptive\_name*-*numeric\_id*
 > The command part of the test case identifier **must** be defined same as the protocol command name described in the SCMI specification.
@@ -23,11 +24,11 @@ General Rules
 ----------
 
 > All test case identifiers **must** be unique.
-> The test designers should ensure that if there are multiple test case id's with same protocol,  command and descriptive-name fields then the numeric-id should be made different to make it unique.
+> The test designers should ensure that if there are multiple test case id's with same protocol, command and descriptive-name fields then the numeric-id should be made different to make it unique.
 
 ----------
 
-> Every test case compares return values against expected results provided by user via the platform properties to determine a PASS/FAIL verdict. If  expected result is unspecified then the return values will be reported as 'INFO' without any PASS/FAIL verdict
+> Every test case compares return values against expected results provided by user via the platform properties to determine a PASS/FAIL verdict. If expected result is unspecified then the return values will be reported as 'INFO' without any PASS/FAIL verdict
 
 ----------
 
@@ -38,16 +39,16 @@ General Rules
 > A collection of [test cases](http://glossary.astqb.org/search/test%20case) is defined as a [test suite](http://glossary.astqb.org/search/test%20suite).
 >
 > The scmi test library comprises of a collection of test suites grouped per protocol.
-> The first test suite in each of those groups **must** have test cases targeting PROTOCOL\_VERSION, PROTOCOL\_ATTRIBUTES, PROTOCOL\_MESSAGE\_ATTRIBUTES commands for the given protocol. This allows the discovery of the command support and determines the ability or need to execute the remainder of the test suites in the group.
+> The first test suite in each of these groups **must** have test cases targeting PROTOCOL\_VERSION, PROTOCOL\_ATTRIBUTES, PROTOCOL\_MESSAGE\_ATTRIBUTES commands for the given protocol. This allows for the discovery of the supported commands and determines the need to execute the remainder of the test suites within the group.
 > The remaining test suites **should** be organised on a per command basis to enable the discovery based test execution.
 
 ----------
 
-> If there are test cases needing a **pre-condition** or a **post-condition** they are captured as separate test cases which **must** come  **just before** or **just after** the relevant test case in the test suite.  Ensuring the correct positioning of the precondition or post condition test cases within the test suite is a test developer responsibility. Such test cases **must** have 'precondition_' or 'postcondition_' prefix in the test case name followed by the descriptive name of the original test case for which this relates to.
+> Some tests may require a **pre-condition** or a **post-condition** check. These checks are captured as separate test cases which **must** come  immediately preceeding or just after the relevant test case.  Ensuring the correct positioning of these tests within the suite is the responsibility of the test developer. Such test cases **must** have 'precondition_' or 'postcondition_' prefix in the test case name followed by the descriptive name of the original test case for which this relates to.
 
 > A typical example for a test case needing a precondition is the get command which will have a set command as a precondition.
 
-> A typical example for a test case needing a postcondition is a subscribe for notification command which will have unsubscribe for notification command as a postcondition.
+> A typical example for a test case needing a postcondition is a subscribe for notification command which will have unsubscribe for notification command as the postcondition.
 
 Base Protocol Tests
 ----------
