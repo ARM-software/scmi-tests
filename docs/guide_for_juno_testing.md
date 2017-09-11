@@ -10,28 +10,30 @@ Table of Contents:
 
 Introduction
 -------
-This document lists the instructions to be followed to enable the Juno Linux image to run SCMI Linux application using the mailbox test driver interface.
+This document lists the instructions that must be followed to enable the Juno Linux image to run SCMI Linux application using the mailbox test driver interface.
 
 Juno ADP software stack
 -------
-The ARM connected community maintains the information about the software stack support for Juno ADP. For more information, see [ARM connected community].
+The [Arm connected community] maintains the information about the software stack support for Juno ADP. 
 
 Linux kernel 
 -------
+The following changes must be made in the Linux kernel source code:
+
 ### Mailbox test driver
-In order to use scmi test agent on Juno platform, the Linux kernel needs to be rebuilt to include the mailbox test driver with mailbox doorbell support and some additional changes. <br>
-The below mentioned steps are tested against Linux kernel version 4.13-rc5. 
+To use SCMI test agent on Juno platform, the Linux kernel must be rebuilt to include the mailbox test driver with mailbox doorbell support and additional changes. <br>
+Doorbell support patches for mailbox and additional changes to enable mailbox test driver are tested against Linux kernel version 4.13-rc5. 
 
 ### Doorbell support patches for mailbox
-The door bell support for mailbox driver is enabled by applying a patch series currently discussed in LKML. For more information, see [Mailbox doorbell support patches]. These patches are hosted on the [Mailbox doorbell support repo]. The user needs to apply this patch to the Juno mainline tracker kernel. The kernel can be downloaded using the steps mentioned on the connected community page.
+The doorbell support for mailbox driver is enabled by applying a patch series that is currently discussed in LKML. For more information, see [Mailbox doorbell support patches]. These patches are hosted on the [Mailbox doorbell support repo]. This patch must be applied to the Juno mainline tracker kernel. The kernel can be downloaded using the steps that are mentioned on [Arm connected community].
 
 ### Additional changes to enable mailbox test driver
-In addition to applying the patches, follow the steps below before starting the kernel build.
+In addition to applying the patches, follow these steps before starting the kernel build:
 
-`Enable mailbox test driver`: By default the Juno ADP kernels do not have the mailbox test driver enabled. Set CONFIG_MAILBOX_TEST=y in kernel config to include mailbox test driver in the kernel.
+`Enable mailbox test driver`: By default, Juno ADP kernels do not have the mailbox test driver enabled. Set CONFIG_MAILBOX_TEST=y in kernel config to include mailbox test driver in the kernel.
 
-`Update device tree`: The Juno device trees currently have a node describing mailbox prior to the doorbell mode support. Additionally the current device tree do not have a node describing the mailbox test. <br>
-The user should do the following in arch/arm64/boot/dts/arm/juno-base.dtsi. Replace existing node describing mailbox with the following:
+`Update device tree`: The Juno device trees currently have a node describing mailbox prior to the doorbell mode support. Also, the current device trees do not have a node describing the mailbox test. <br>
+You must do the following in arch/arm64/boot/dts/arm/juno-base.dtsi. Replace existing node describing mailbox with the following:
 
 ```
 	mailbox: mhu@2b1f0000 {
@@ -47,7 +49,7 @@ The user should do the following in arch/arm64/boot/dts/arm/juno-base.dtsi. Repl
 			clock-names = "apb_pclk";
 	};
 ```
-And then add a new node describing the mailbox test as below:
+Then, add a new node describing the mailbox test as shown below:
 
 ```
 	mailbox-test@2e000000 {
@@ -58,9 +60,9 @@ And then add a new node describing the mailbox test as below:
 	};
 ```
 
-`Modify mailbox driver to prevent format conversion`: The current version of mailbox driver always converts raw binary data to hex format. For scmi test agent we expect raw data unmodified for processing. This below change prevents the format change. 
-<br> The driver support to add this as a configurable option, is planned for the future.
-<br> Until that change is added, the below change is required in the mbox_test_message_read function in drivers/mailbox/mailbox-test.c:
+`Modify mailbox driver to prevent format conversion`: The current version of mailbox driver always converts raw binary data to hex format. For SCMI test agent, we expect raw data unmodified for processing. The change that is shown below prevents the format change. 
+<br> The driver support to add this as a configurable option is planned for the future.
+<br> Until that change is added, the change that is shown below is required in the mbox_test_message_read function in drivers/mailbox/mailbox-test.c:
 
 ```
 	}
@@ -79,16 +81,16 @@ waitq_err:
 	__set_current_state(TASK_RUNNING);
 	remove_wait_queue(&tdev->waitq, &wait);
 ```
-The current change described above in mailbox test driver is not an elegant solution. The better solution is to use sysfs entry for configurability. This enhancement will be upstreamed in the future making this change redundant.
+The current change in mailbox test driver is not an ideal solution. A better solution is to use sysfs entry for configurability. This enhancement will be upstreamed in the future, thereby making this change redundant.
 
 ## Kernel build
-Build kernel and device tree after making the changes for Juno ADP and flash the images in target.
+Build the kernel and device tree after making the changes for Juno ADP, and flash the images in target.
 
-For the instructions to build the test suite for arm/juno platform and running it please refer back to relevant sections in [User Guide].
+For instructions to build the test suite for arm/juno platform and running it, see relevant sections in [User Guide].
 
 - - - - - - - - - - - - - - - -
 
-_Copyright (c) 2017, ARM Limited and Contributors. All rights reserved._
+_Copyright (c) 2017, Arm Limited and Contributors. All rights reserved._
 
 [ARM connected community]:		https://community.arm.com/dev-platforms
 [Mailbox doorbell support patches]:	https://lkml.org/lkml/2017/5/24/339
