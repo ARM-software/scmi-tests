@@ -6,7 +6,7 @@
 For more information, download the [SCMI Platform Design Document](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.den0056a/index.html).
 
 ## SCMI test suite
-SCMI test suite enables adopters of System Control and Management Interface \(SCMI\) PDD \(Platform Design Document\) to test their own implementations. SCMI test suite provides a predefined library of tests and a test framework to execute these tests. The test suite can be adapted to different platforms. It also enables the extension of the current test library to include platform-specific custom commands and custom protocols.
+SCMI test suite enables adopters of SCMI PDD \(Platform Design Document\) to test their own implementations. It provides a predefined library of tests and a test framework to execute these tests. The test suite can be adapted to different platforms. It also enables the extension of the current test library to include platform-specific custom commands and custom protocols.
 
 ## Release details
  - Code quality: REL v1.0.
@@ -31,12 +31,10 @@ The following test coverage is available with the current release of the test su
 
 The following features or capability additions are planned as part of future releases:
 -   Testing notifications and delayed responses for relevant commands.
--   Test library extension with new test cases for additional protocols as defined in newer version of the PDD.
+-   Test library extension with new test cases for additional protocols as defined in the newer version of the PDD.
 -   Testing multiple commands in a single test case.
 
 ## Getting started
-Get the SCMI test suite source code from [GitHub](https://github.com/ARM-software/scmi-tests).
-
 See the [User Guide] for instructions to adapt, build, run the test suite, and interpret the results from the test execution.
 
 ### Additional reading
