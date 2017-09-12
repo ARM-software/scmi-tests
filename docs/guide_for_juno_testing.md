@@ -4,9 +4,11 @@
 Table of Contents:
 - [Introduction](#introduction)
 - [Juno ADP software stack](#juno-adp-software-stack)
-- [Using mailbox test driver](#mailbox-test-driver)
+- [Linux kernel](#linux-kernel)
+  * [Mailbox test driver](#mailbox-test-driver)
   * [Doorbell support patches for mailbox](#doorbell-support-patches-for-mailbox)
   * [Additional changes to enable mailbox test driver](#additional-changes-to-enable-mailbox-test-driver)
+- [Kernel build](#kernel-build)
 
 Introduction
 -------
@@ -14,21 +16,20 @@ This document lists the instructions that must be followed to enable the Juno Li
 
 Juno ADP software stack
 -------
-The [Arm connected community] maintains the information about the software stack support for Juno ADP. 
+The [Arm connected community] maintains the information about the software stack support for Juno Arm Development Platform (ADP). 
 
 Linux kernel 
 -------
-The following changes must be made in the Linux kernel source code:
+The following changes must be made in the Linux kernel source code.
 
 ### Mailbox test driver
-To use SCMI test agent on Juno platform, the Linux kernel must be rebuilt to include the mailbox test driver with mailbox doorbell support and additional changes. <br>
-Doorbell support patches for mailbox and additional changes to enable mailbox test driver are tested against Linux kernel version 4.13-rc5. 
+To use SCMI test agent on Juno platform, the Linux kernel must be rebuilt to include the mailbox test driver with mailbox doorbell support and additional changes. Doorbell support patches for mailbox and additional changes to enable mailbox test driver are tested against Linux kernel version 4.13. 
 
 ### Doorbell support patches for mailbox
-The doorbell support for mailbox driver is enabled by applying a patch series that is currently discussed in LKML. For more information, see [Mailbox doorbell support patches]. These patches are hosted on the [Mailbox doorbell support repo]. This patch must be applied to the Juno mainline tracker kernel. The kernel can be downloaded using the steps that are mentioned on [Arm connected community].
+The doorbell support for mailbox driver is enabled by applying a patch series that is currently discussed in LKML. For more information, see [Mailbox doorbell support patches]. Pick up the relevant mailbox patches from [Mailbox doorbell support repo]. These patches must be applied to the Juno mainline tracker kernel. The kernel can be downloaded using the steps that are mentioned on [Arm connected community].
 
 ### Additional changes to enable mailbox test driver
-In addition to applying the patches, follow these steps before starting the kernel build:
+In addition to applying the patches, follow these steps before starting the kernel build.
 
 `Enable mailbox test driver`: By default, Juno ADP kernels do not have the mailbox test driver enabled. Set CONFIG_MAILBOX_TEST=y in kernel config to include mailbox test driver in the kernel.
 
