@@ -1,6 +1,6 @@
 # System Control and Management Interface - Test Suite
 
-## SCMI
+## Introduction
 **System Control and Management Interface** (SCMI)  is a set of Operating System-independent software interfaces that are used in system management.
 
 For more information, download the [SCMI Platform Design Document](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.den0056a/index.html).
