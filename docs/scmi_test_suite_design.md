@@ -3,12 +3,12 @@
 
 Table of Contents:
 - [Introduction](#introduction)
-- [Design Goals](#design-goals)
-- [Design Overview](#design-overview)
+- [Design goals](#design-goals)
+- [Design overview](#design-overview)
   * [Components](#components)
   * [Interfaces](#interfaces)
-- [Code Structure](#code-structure)
-- [Detailed Design](#detailed-design)
+- [Code structure](#code-structure)
+- [Detailed design](#detailed-design)
   * [Test execution flow for a standard test case](#standard-test-case)
   * [Test execution flow for a discovery driven test case](#discovery-driven-test-case)
   * [Test execution flow for a test having pre-condition test case defined](#test-define-with-pre-condition-test-case)
@@ -96,7 +96,7 @@ scmi-tests
 			    Test agent running on host machine for mock testing test suite implementation
 ```
 
-Detailed Design
+Detailed design
 -------
 This section provides a detailed description of the design and its various components.
 
