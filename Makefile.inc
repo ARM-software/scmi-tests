@@ -1,5 +1,5 @@
 export CC      := $(CROSS_COMPILE)gcc
-CFLAGS  +=
+CFLAGS  += -static
 
 LD      := $(CROSS_COMPILE)ld
 LDFLAGS +=
