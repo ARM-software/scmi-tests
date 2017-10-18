@@ -5,7 +5,6 @@
 #
 
 include Makefile.inc
-include $(wildcard ./*/*.mk)
 export TOP=$(shell pwd)
 # Library and executable names
 LIB=scmi_test
