@@ -113,7 +113,7 @@ static struct arm_scmi_base_expected ospm_base_expectations = {
     .protocol_version = 0x10000,
     .vendor_identifier = "ARM",
     .subvendor_identifier = "ARM",
-    .implementation_version = VERSION_ENCODE32(1, 25, 0),
+    .implementation_version = VERSION_ENCODE32(1, 26, 0),
     .num_protocols_implemented = 5,
     .supported_protocols = (uint32_t[]) {
         PROTOCOL_ID_POWER,
