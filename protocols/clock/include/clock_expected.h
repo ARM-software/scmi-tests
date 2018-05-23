@@ -43,7 +43,7 @@ struct arm_scmi_clock_expected {
 	 * 1 for this field specifies if the rate format returned is a 3 tuple
 	 * (low, high, num_of_rates), 0 are discrete clock rates.
 	 */
-	uint32_t rate_format_supported;
+	uint32_t *rate_format_supported;
 
 	/*
 	 * This should have the low clock rate of the 3 tuple value for each clock
