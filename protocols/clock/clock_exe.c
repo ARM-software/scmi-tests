@@ -263,9 +263,15 @@ void arm_scmi_custom_tester_clock_describe_rates(
 			uint32_t format = arm_scmi_get_norm_bits(num_rates_flags,
 				CLK_DESCRATE_RETURN_FORMAT_HIGH, CLK_DESCRATE_RETURN_FORMAT_LOW);
 			clock_protocol_data.format = format;
-			arm_scmi_check_and_report_dec(test_stats, expected_flags_mask,
-				LEFT_SHIFT(RATE_FORMAT_SUPPORTED),
-				clock_expected->rate_format_supported, format, "FORMAT");
+			if (clock_expected->rate_format_supported) {
+				arm_scmi_check_and_report_dec(test_stats, expected_flags_mask,
+					LEFT_SHIFT(RATE_FORMAT_SUPPORTED),
+					clock_expected->rate_format_supported[clock_id],
+                                        format, "FORMAT");
+			} else {
+				arm_scmi_check_and_report_dec(test_stats, expected_flags_mask,
+					LEFT_SHIFT(RATE_FORMAT_SUPPORTED), 0, format, "FORMAT");
+			}
 			/* Check/print number of rates */
 			num_rates = arm_scmi_get_norm_bits(num_rates_flags,
 				CLK_DESCRATE_NUM_RATES_RETURNED_HIGH,
