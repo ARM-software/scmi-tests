@@ -95,7 +95,8 @@ enum protocol_ids {
     PROTOCOL_ID_SYSTEM_POWER=0x12,
     PROTOCOL_ID_PERF=0x13,
     PROTOCOL_ID_CLOCK=0x14,
-    PROTOCOL_ID_SENSOR=0x15
+    PROTOCOL_ID_SENSOR=0x15,
+    PROTOCOL_ID_APCORE=0x90
 };
 
 static struct arm_scmi_base_expected ospm_base_expectations = {
@@ -113,14 +114,15 @@ static struct arm_scmi_base_expected ospm_base_expectations = {
     .protocol_version = 0x10000,
     .vendor_identifier = "ARM",
     .subvendor_identifier = "ARM",
-    .implementation_version = VERSION_ENCODE32(1, 26, 0),
-    .num_protocols_implemented = 5,
+    .implementation_version = VERSION_ENCODE32(1, 27, 0),
+    .num_protocols_implemented = 6,
     .supported_protocols = (uint32_t[]) {
         PROTOCOL_ID_POWER,
         PROTOCOL_ID_SYSTEM_POWER,
         PROTOCOL_ID_PERF,
         PROTOCOL_ID_CLOCK,
         PROTOCOL_ID_SENSOR,
+	PROTOCOL_ID_APCORE,
     },
     .num_agents = 2,
     .agent_names = (char *[]) { "OSPM", "PSCI" },
