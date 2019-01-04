@@ -95,5 +95,5 @@ _Copyright (c) 2017, Arm Limited and Contributors. All rights reserved._
 
 [ARM connected community]:		https://community.arm.com/dev-platforms
 [Mailbox doorbell support patches]:	https://lkml.org/lkml/2017/5/24/339
-[Mailbox doorbell support repo]:	https://git.kernel.org/pub/scm/linux/kernel/git/sudeep.holla/linux.git/log/?h=for-list/arm_mhu_doorbell
+[Mailbox doorbell support repo]:	https://git.kernel.org/pub/scm/linux/kernel/git/sudeep.holla/linux.git/log/?h=scmi_mhu_dt_changes
 [User Guide]:				./user_guide.md
