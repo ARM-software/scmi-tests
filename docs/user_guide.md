@@ -1,4 +1,4 @@
-**SCMI Test Suite User Guide**
+**SCMI Compliance Suite User Guide**
 ==============================
 
 Table of Contents:
@@ -7,271 +7,142 @@ Table of Contents:
 - [Prerequisites](#prerequisites)
   * [Host machine requirements and tools](#host-machine-requirements-and-tools)
 - [Getting SCMI test suite source code](#getting-scmi-test-suite-source-code)
-- [Test suite design and library of tests](#test-suite-design-and-library-of-tests)
+- [Complaince suite design and library of tests](#test-suite-design-and-library-of-tests)
 - [Build steps](#build-steps)
-  * [Build the test suite as a library](#build-the-test-suite-as-a-library)
-  * [Build the test suite as a test agent](#build-the-test-suite-as-a-test-agent)
+  * [1. Build the test suite as a library](#build-the-test-suite-as-a-library)
+  * [2. Build the test suite as a test agent](#build-the-test-suite-as-a-test-agent)
 - [Test suite execution](#test-suite-execution)
   * [Running the test agent on host machine](#running-the-test-agent-on-host-machine)
-  * [Running the test agent on Juno platform](#running-the-test-agent-on-juno-platform)
+  * [Running the test agent on SGM platform](#running-the-test-agent-on-sgm-platform)
 - [Test execution report](#test-execution-report)
 
 Introduction
 -------
 
-This document outlines how to fetch, adapt, and build SCMI test suite. The steps to build and run the test suite for a 'self test mocker' platform on host machine and Juno Arm Development Platform (ADP) are provided as reference.
+This document outlines how to fetch, adapt, and build the SCMI test suite. The steps to build and run the test suite for a mocker platform on host machine and System Guidance for Mobile (SGM) [System Guidance] are provided as reference.
 
 ## Prerequisites
-The following are the prerequisites to build an SCMI test suite.
+The following are the prerequisites to build the SCMI test suite.
 
 ### Host machine requirements and tools
 -------
 
-The software has been built on Ubuntu 14.04 LTS (64-bit).
-Packages used for building the software were installed from that distribution unless otherwise specified. Though it was tested only on Ubuntu 14.04, it is expected to also work on later versions of Ubuntu.
+The software is built on Ubuntu 16.04 LTS (64-bit).
+Packages used for building the software are installed from this distribution unless otherwise specified. Though it is tested only on Ubuntu 16.04, it is expected to also work on later versions of Ubuntu.
 
 Install the following tools with the command:
 
 >`sudo apt-get install build-essential gcc make git`
 
-Download and install AArch64 little-endian GCC cross compiler as specified in [Linaro Release Notes][Linaro Release Notes].
+Download and install the AArch64 little-endian GCC cross compiler as specified in [Linaro Release Notes].
 
-Getting SCMI test suite source code
+Downloading the SCMI test suite source code
 -------
 
-Download the SCMI test suite source code from GitHub:
+To download the SCMI test suite source code from GitHub, execute:
 
 >`git clone https://github.com/ARM-software/scmi-tests`
 
-Test suite design and library of tests
+Compliance suite design and library of tests
 -------
 
-For details on the SCMI test suite design, see [SCMI Test Suite Design][SCMI Test Suite Design]. The design document provides an overview of the design considerations, the interfaces that must be implemented to adapt this test suite for your own platform, and the overall code organization. Some control flows are also detailed to describe the execution flow.
+For details on the SCMI compliance suite design, see [Validation Methodology Document]. The design document provides an overview of the design considerations, the interfaces that must be implemented to adapt this test suite for your own platform, and the overall code organization. Some control flows are also detailed to describe the execution flow.
 
-For details on the library of tests that are included in the test suite, see [SCMI Test Specification].
+For details on the tests that are included in the test suite, see [Test checklist].
 
 Build steps
 -------
 
-The test suite can be built as a self-test executable for mocker platform, as a library, or as an Operating System Power Management (OSPM) agent running on Linux.
+The compliance suite can be built as a library which can be linked to your execution enviroment or as an Operating System Power Management (OSPM) agent running on Linux.
+The tests are designed for SCMI version 2.0, but backward compatibility is maintained with version 1.0. You can choose the version while building the tests.
 
-### Build the test suite as a library
+### 1. Building the test suite as a library
 
-The tests can be built as a library which you can link to your execution environment and launch the test agent.
+To start the build, perform the following steps from the `<test suite clone location>`.
 
-To start the build, perform the following steps.
-
->`CROSS_COMPILE=<path/to/your/AArch64 compiler>/aarch64-linux-gnu- make clean`
+>`CROSS_COMPILE=<path/to/your/AArch64/compiler/bin>/aarch64-linux-gnu- make clean`
 >
->`CROSS_COMPILE=<path/to/your/AArch64 compiler>/aarch64-linux-gnu- make PROTOCOLS=<comma separated protocol list>`
+>`CROSS_COMPILE=<path/to/your/AArch64/compiler/bin>/aarch64-linux-gnu- make PROTOCOLS=<comma separated protocol list> VERSION=<scmi version> VERBOSE=<level>`
 
-The output of the make command is libscmi_test.a library, which can be linked and used in your test execution environment.
+Example:
 
-If you do not specify PROTOCOLS variable when invoking make command, Base Protocol test library alone is generated by default.
-
->`CROSS_COMPILE=<path/to/your/AArch64 compiler>/aarch64-linux-gnu- make clean`
+>`CROSS_COMPILE=<path/to/your/AArch64 compiler/bin>/aarch64-linux-gnu- make clean`
 >
->`CROSS_COMPILE=<path/to/your/AArch64 compiler>/aarch64-linux-gnu- make PROTOCOLS=base,clock,power,system_power,performance,sensor`
+>`CROSS_COMPILE=<path/to/your/AArch64 compiler/bin>/aarch64-linux-gnu- make PROTOCOLS=base,clock,power,system_power,performance,sensor VERSION=1 VERBOSE=1`
 
-The output of this make command is the libscmi_test.a library that includes the tests for all the specified protocols. The comma-separated values are the subfolder names that are found in `<test suite clone location>/protocols` folder.
-If there are memory constraints on the platform, fewer tests can be included by modifying the PROTOCOLS variable.
+If you do not specify the PROTOCOLS variable when invoking the make command, Base Protocol test library alone is generated by default.
+If you do not specify the VERSION variable when invoking the make command, SCMI version 1.0 tests are generated by default.
 
-### Build the test suite as a test agent
-A test agent is an execution wrapper for libscmi_test.a.
+The output of this make command is the libscmi_test.a library that includes the tests for all the specified protocols and version . The library will be generated in the `<test suite clone location>`. The arguments passed to the PROTOCOLS parameter are the subfolder names that are found in `<test suite clone location>/test_pool` folder.
+If there are memory constraints on the platform, fewer tests can be included by modifying the PROTOCOLS variable. The library can be linked to your execution enviroment.
 
-#### Build for self-test mocker platform
+### 2. Building the test suite as a test agent
+A test agent is an execution wrapper for libscmi_test.a. Currently, support is provided for the following two platforms.
 
-A self-test framework is implemented on a mocker platform that provides a fake response to the SCMI commands issued by the test suite. To build the library libscmi_test.a and scmi_test_agent for the mocker platform, follow these steps:
+#### 2.1 Mocker platform
+
+A self-test framework is implemented on a mocker platform that provides a simulated response to the SCMI commands issued by the test suite. To start the build, perform the following steps from the `<test suite clone location>`.
 
 >`make clean`
 >
->`make PLAT=self_test/mocker PROTOCOLS=base,clock,performance,power,system_power,sensor`
+>`make PLAT=mocker PROTOCOLS=base,clock,performance,power,system_power,sensor VERSION=1 VERBOSE=1`
 
-Note that the mocker platform is to enable 'testing of the test framework' only. When the test library is extended to support new protocols or commands, it is **not** necessary to support the same in the mocker platform, unless it is warranted for testing the framework changes.
+The output will be libscmi_test.a and scmi_test_agent in the `<test suite clone location>`.
+When the test library is extended to support new protocols or commands, it is **not** necessary to support the same in the mocker platform, unless it is warranted for testing the framework changes.
 
-#### Build OSPM agent for Arm Juno platform
+#### 2.2 OSPM agent for SGM
 
-A reference implementation for Juno ADP is provided in the suite. In addition to building the library, the build also enables the SCMI test suite to run as an OSPM agent running from Linux using publicly available mailbox test driver interface. You can build the test suite for Juno platform with the following command:
+A reference implementation for SGM is provided in the suite. In addition to building the library, the build also enables the SCMI test suite to run as an OSPM agent running from Linux using publicly available mailbox test driver interface. To start the build, perform the following steps from the `<test suite clone location>`.
 
->`CROSS_COMPILE=<path/to/your/AArch64 compiler>/aarch64-linux-gnu- make clean`
+>`CROSS_COMPILE=<path/to/your/AArch64 compiler/bin>/aarch64-linux-gnu- make clean`
 >
->`CROSS_COMPILE=<path/to/your/AArch64 compiler>/aarch64-linux-gnu- make PLAT=arm/juno PROTOCOLS=base,clock,power,performance,system_power,sensor`
+>`CROSS_COMPILE=<path/to/your/AArch64 compiler/bin>/aarch64-linux-gnu- make PLAT=sgm776 PROTOCOLS=base,clock,power,performance,system_power,sensor VERSION=1 VERBOSE=1`
 
-This output of the build is an executable scmi_test_agent which links to the test suite library.
-
-It is important to note that you must rebuild the Linux kernel and device trees for Juno by following the [Guide to test SCMI on Juno][Testing On Juno].
+The output will be libscmi_test.a and scmi_test_agent for the mocker platform in the `<test suite clone location>`.
+**NOTE**: 
+* The same executable can be used on SGM-775 or SGM-776
+* You must rebuild the Linux kernel and device trees for SGM by following the [Guide to test SCMI on SGM].
 
 Test suite execution
 -------
 
-### Running the test agent on host machine
+### Running the test agent on the host machine
 
-To run the test suite on the host machine, issue the command:
+To run the test suite on the host machine, execute the command:
 
 >`./scmi_test_agent`
 
 For the self_test/mocker platform, the test logs are dumped on the console itself.
 
-### Running the test agent on Juno platform
+### Running the test agent on SGM platform
 
-To run the test suite on the Juno platform, issue the following command in the filesystem that is mounted on Juno:
+To run the test suite on the SGM platform, execute the following command in the filesystem that is mounted on SGM:
 
 >`cd <path/to/executable in filesystem>`
 >
->`./scmi_test_agent -board <variant>`
+>`./scmi_test_agent`
 
-Here, `<variant>` can be r0, r1, or r2.
 The test logs are captured in a report file arm\_scmi\_test\_log.txt in the same directory as the executable.
 
 Test execution report
 -------
-The following is an example test execution report from running tests on self_test/mocker platform with Base protocol alone included in the test library:
 
-```
-Protocol Base.-
+The test report lists results per test case. The tests are organized as a collection within individual protocol. For every test case, the following verification steps occur:
 
-	BASE_DISCOVERY:
-			MESSAGE_ID = 0x00
-			CHECK HEADER: PASSED [0x00004000]
-			CHECK STATUS: PASSED [SCMI_STATUS_SUCCESS]
-			RETURN@0x0 'PROTOCOL VERSION': PASSED [0x00010000]
-		[base]-{PROTOCOL_VERSION}-query_protocol_version-01: CONFORMANT
-			MESSAGE_ID = 0x01
-			CHECK HEADER: PASSED [0x00004001]
-			CHECK STATUS: PASSED [SCMI_STATUS_SUCCESS]
-			RETURN@0x0 'ATTRIBUTES_RESERVED': PASSED [0]
-			RETURN@0x0 'ATTRIBUTES_NUMBER_AGENTS': PASSED [1]
-			RETURN@0x0 'ATTRIBUTES_NUMBER_PROTOCOLS': PASSED [5]
-		[base]-{PROTOCOL_ATTRIBUTES}-query_protocol_attributes-01: CONFORMANT
-			MESSAGE_ID = 0x02
-			PARAMETERS uin32_t[1] = |3|
-			CHECK HEADER: PASSED [0x00004002]
-			CHECK STATUS: PASSED [SCMI_STATUS_SUCCESS]
-			RETURN@0x0 'MESSAGE ATTRIBUTES': PASSED [0x00000000]
-			CHECK STATUS@'message_id' = 0x0003: PASSED [SCMI_STATUS_SUCCESS]
-		[base]-{PROTOCOL_MESSAGE_ATTRIBUTES}-query_vendor_disc_cmd_support-01: CONFORMANT
-			MESSAGE_ID = 0x02
-			PARAMETERS uin32_t[1] = |4|
-			CHECK HEADER: PASSED [0x00004002]
-			INFO STATUS: INFO [SCMI_STATUS_SUCCESS]
-			RETURN@0x0 'MESSAGE ATTRIBUTES': PASSED [0x00000000]
-			CHECK STATUS@'message_id' = 0x0004: PASSED [SCMI_STATUS_SUCCESS]
-		[base]-{PROTOCOL_MESSAGE_ATTRIBUTES}-query_subvendor_disc_cmd_support-01: CONFORMANT
-			MESSAGE_ID = 0x02
-			PARAMETERS uin32_t[1] = |5|
-			CHECK HEADER: PASSED [0x00004002]
-			CHECK STATUS: PASSED [SCMI_STATUS_SUCCESS]
-			RETURN@0x0 'MESSAGE ATTRIBUTES': PASSED [0x00000000]
-			CHECK STATUS@'message_id' = 0x0005: PASSED [SCMI_STATUS_SUCCESS]
-		[base]-{PROTOCOL_MESSAGE_ATTRIBUTES}-query_impl_version_cmd_support-01: CONFORMANT
-			MESSAGE_ID = 0x02
-			PARAMETERS uin32_t[1] = |6|
-			CHECK HEADER: PASSED [0x00004002]
-			CHECK STATUS: PASSED [SCMI_STATUS_SUCCESS]
-			RETURN@0x0 'MESSAGE ATTRIBUTES': PASSED [0x00000000]
-			CHECK STATUS@'message_id' = 0x0006: PASSED [SCMI_STATUS_SUCCESS]
-		[base]-{PROTOCOL_MESSAGE_ATTRIBUTES}-query_proto_list_cmd_support-01: CONFORMANT
-			MESSAGE_ID = 0x02
-			PARAMETERS uin32_t[1] = |7|
-			CHECK HEADER: PASSED [0x00004002]
-			INFO STATUS: INFO [SCMI_STATUS_SUCCESS]
-			RETURN@0x0 'MESSAGE ATTRIBUTES': PASSED [0x00000000]
-			CHECK STATUS@'message_id' = 0x0007: PASSED [SCMI_STATUS_SUCCESS]
-		[base]-{PROTOCOL_MESSAGE_ATTRIBUTES}-query_agent_disc_cmd_support-01: CONFORMANT
-			MESSAGE_ID = 0x02
-			PARAMETERS uin32_t[1] = |8|
-			CHECK HEADER: PASSED [0x00004002]
-			INFO STATUS: INFO [SCMI_STATUS_SUCCESS]
-			RETURN@0x0 'MESSAGE ATTRIBUTES': PASSED [0x00000000]
-			CHECK STATUS@'message_id' = 0x0008: PASSED [SCMI_STATUS_SUCCESS]
-		[base]-{PROTOCOL_MESSAGE_ATTRIBUTES}-query_notify_error_cmd_support-01: CONFORMANT
+`Message Header`: The message header that is received from the platform is checked against what was in the send command.
 
-	BASE_DISCOVER_VENDOR:
-			MESSAGE_ID = 0x03
-			CHECK HEADER: PASSED [0x00004003]
-			CHECK STATUS: PASSED [SCMI_STATUS_SUCCESS]
-			RETURN@0x0 'VENDOR IDENTIFIER': PASSED ['VENDOR 1']
-		[base]-{BASE_DISCOVER_VENDOR}-query_vendor_info-01: CONFORMANT
+`Status`: The platform returns a status for a command that is issued by the agent and this is checked as per specification or as per expected values provided by you.
 
-	BASE_DISCOVER_SUB_VENDOR:
-			MESSAGE_ID = 0x04
-			CHECK HEADER: PASSED [0x00004004]
-			CHECK STATUS: PASSED [SCMI_STATUS_SUCCESS]
-			RETURN@0x0 'SUBVENDOR IDENTIFIER': PASSED ['SUBVENDOR 1']
-		[base]-{BASE_DISCOVER_SUB_VENDOR}-query_subvendor_info-01: CONFORMANT
+`Return Values - if relevant`: The remaining return values for a command response are valid based on status return value. Checks are performed only if status return value returned SUCCESS and expected values were given by the user.
 
-	BASE_DISCOVER_IMPLEMENTATION_VERSION:
-			MESSAGE_ID = 0x05
-			CHECK HEADER: PASSED [0x00004005]
-			CHECK STATUS: PASSED [SCMI_STATUS_SUCCESS]
-			RETURN@0x0 'IMPLEMENTATION VERSION': PASSED [0x00000001]
-		[base]-{BASE_DISCOVER_IMPLEMENTATION_VERSION}-query_implementation_ver-01: CONFORMANT
-
-	BASE_DISCOVER_LIST_PROTOCOLS:
-			MESSAGE_ID = 0x06
-			PARAMETERS uin32_t[1] = |0|
-			CHECK HEADER: PASSED [0x00004006]
-			CHECK STATUS: PASSED [SCMI_STATUS_SUCCESS]
-			NUMBER OF PROTOCOLS: PASSED [5]
-			PROTOCOL ID: PASSED [17]
-			PROTOCOL ID: FAILED [Expected: 18, Received: 19]
-			PROTOCOL ID: FAILED [Expected: 19, Received: 20]
-			PROTOCOL ID: FAILED [Expected: 20, Received: 21]
-			PROTOCOL ID: FAILED [Expected: 21, Received: 18]
-		[base]-{BASE_DISCOVER_LIST_PROTOCOLS}-query_protocol_list-01: NON CONFORMANT
-			MESSAGE_ID = 0x06
-			PARAMETERS uin32_t[1] = |6|
-			CHECK HEADER: PASSED [0x00004006]
-			CHECK STATUS: PASSED [SCMI_STATUS_INVALID_PARAMETERS]
-		[base]-{BASE_DISCOVER_LIST_PROTOCOLS}-query_invalid_skipindex-01: CONFORMANT
-
-	BASE_DISCOVER_AGENT:
-			MESSAGE_ID = 0x07
-			PARAMETERS uin32_t[1] = |0|
-			CHECK HEADER: PASSED [0x00004007]
-			CHECK STATUS: PASSED [SCMI_STATUS_SUCCESS]
-			AGENT NAME: PASSED [platform_mock]
-		[base]-{BASE_DISCOVER_AGENT}-query_agent_id0-01: CONFORMANT
-			MESSAGE_ID = 0x07
-			PARAMETERS uin32_t[1] = |1|
-			CHECK HEADER: PASSED [0x00004007]
-			INFO STATUS: INFO [UNKNOWN SCMI STATUS CODE(1)]
-			AGENT NAME: PASSED ['agent']
-		[base]-{BASE_DISCOVER_AGENT}-query_non_zero_agentid-01: CONFORMANT
-			MESSAGE_ID = 0x07
-			PARAMETERS uin32_t[1] = |2|
-			CHECK HEADER: PASSED [0x00004007]
-			CHECK STATUS: PASSED [SCMI_STATUS_NOT_FOUND]
-		[base]-{BASE_DISCOVER_AGENT}-query_invalid_agentid-01: CONFORMANT
-
-	BASE_NOTIFY_ERRORS:
-			MESSAGE_ID = 0x08
-			PARAMETERS uin32_t[1] = |1|
-			CHECK HEADER: PASSED [0x00004008]
-			CHECK STATUS: PASSED [SCMI_STATUS_SUCCESS]
-		[base]-{BASE_NOTIFY_ERRORS}-reg_err_notification-01: CONFORMANT
-			MESSAGE_ID = 0x08
-			PARAMETERS uin32_t[1] = |0|
-			CHECK HEADER: PASSED [0x00004008]
-			CHECK STATUS: PASSED [SCMI_STATUS_SUCCESS]
-		[base]-{BASE_NOTIFY_ERRORS}-postcondition_reg_err_notification-01: CONFORMANT
-```
-
-The test report lists results per test case. The tests are organized as a collection within individual test suites in a protocol. For every test case, the following verification steps occur:
-
-`Message Header`: The message header that is received from the platform is checked against what was in the send command. This check cannot be skipped.
-
-`Return Value - Status`: The platform returns a status for a command that is issued by the agent and this is checked as per specification or as per expected values provided by you. The test suite can skip the check against return status and report the received value as 'INFO'.
-
-`Return Value - Others if relevant`: The remaining of the return values for a command response is valid based on status return value. Checks will be performed only if status return value returned SUCCESS and expected values were given by the user or captured in the test library. If not, the returned values will be reported as 'INFO'.
-
-Each individual check delivers a PASS or FAIL verdict unless marked as INFO. A test case is reported as NON CONFORMANT if any of the checks return FAIL in a test case. Otherwise, it returns a CONFORMANT status. Any checks with INFO status do not influence the final result.
+Each individual check delivers a PASS, FAIL, or SKIPPED.
 
 - - - - - - - - - - - - - - - - -
 
-_Copyright (c) 2017, Arm Limited and Contributors. All rights reserved._
+_Copyright (c) 2019, Arm Limited and Contributors. All rights reserved._
 
 [Linaro Release Notes]:		https://community.arm.com/dev-platforms/b/documents/posts/linaro-release-notes-current
-[SCMI Test Suite Design]:	./scmi_test_suite_design.md
-[SCMI Test Specification]:	./scmi_test_specification.md
-[Testing On Juno]:		./guide_for_juno_testing.md
+[Validation Methodology Document]:		./Arm_SCMI_Validation_Methodology.pdf "SCMI Test Suite Design"
+[Test checklist]:		./scmi_testlist.md "SCMI Test Specification"
+[System Guidance]:    https://developer.arm.com/ip-products/system-ip/reference-design
+[Guide to test SCMI on SGM]:  ./guide_sgm_testing.md
