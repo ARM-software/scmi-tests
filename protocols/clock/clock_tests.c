@@ -398,6 +398,7 @@ arm_scmi_test_case_t clock_discovery_test_suite[] = {
 	{.testcase_id = "[clock]-{CLOCK_CONFIG_SET}-clock_config_set_enabled_allowed_clocks-01",
 	 .protocol_id = CLK_PROTO_ID,
 	 .message_id = CLK_CONFIG_SET_MSG_ID,
+	 .parameter_count = 2,
 	 .parameters = (uint32_t[]) {0, CLOCK_ENABLED},
 	 .status = SCMI_STATUS_SUCCESS,
 	 .custom_tester_func = arm_scmi_custom_tester_clock_config_set
@@ -421,6 +422,7 @@ arm_scmi_test_case_t clock_discovery_test_suite[] = {
 	{.testcase_id = "[clock]-{CLOCK_CONFIG_SET}-clock_config_set_disabled_allowed_clocks-01",
 	 .protocol_id = CLK_PROTO_ID,
 	 .message_id = CLK_CONFIG_SET_MSG_ID,
+	 .parameter_count = 2,
 	 .parameters = (uint32_t[]) {0, CLOCK_DISABLED},
 	 .status = SCMI_STATUS_SUCCESS,
 	 .custom_tester_func = arm_scmi_custom_tester_clock_config_set
@@ -532,4 +534,3 @@ arm_scmi_test_case_t clock_discovery_test_suite[] = {
  		}
  	}
  };
-
