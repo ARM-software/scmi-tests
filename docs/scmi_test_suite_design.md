@@ -117,10 +117,10 @@ The test agent maintains a test execution context (in arm\_scmi\_test\_case stru
  - `send_cmd_as_async`: indicates that the command is sent with Async flag set if the flag is available for the command, and wait for the delayed response. The test case completes on receiving a response or until timeout expiry.
  - `timeout_in_sec`: is the timeout value for the test execution context when waiting for a delayed response or notification.
  - `invalid_paramters`: indicates that the custom test execution handler must generate an invalid input for the indexed parameter for the scmi command based on the already discovered information.
- - `parameter_count`: indicates the number of parameters (number of uint32_t values passed through the parameters member) for the scmi command under test. This is ignored if parameter\_discovery\_driven flag is set. In such a case, a custom execution handler fills the correct paramter_count.
- - `parameters`: contains a stream of uint32_t items corresponding to the input paramters for the command. The parameter_count indicates the number of elements in the stream.
+ - `parameter_count`: indicates the number of parameters (number of uint32_t values passed through the parameters member) for the scmi command under test. This is ignored if parameter\_discovery\_driven flag is set. In such a case, a custom execution handler fills the correct parameter_count.
+ - `parameters`: contains a stream of uint32_t items corresponding to the input parameters for the command. The parameter_count indicates the number of elements in the stream.
  - `status`: specifies the expected return status on command completion. A special return value of SCMI\_STATUS\_NOT\_SPECIFIED can be used in scenarios where the return status cannot be pre-determined.
- - `expected_returns`: defines the set of the return values in terms of their type and any metadata for those return values. 
+ - `expected_returns`: defines the set of the return values in terms of their type and any metadata for those return values.
  - `get_return_values_function`: points to a custom handler that fills the required expected_returns for the given test case. If this is NULL, then the generic execution handler handles this.
  - `custom_tester_function`: points to a custom handler that has the special execution logic required to execute the given test case. If this is NULL, then the generic execution handler handles the test case execution.
  - `post_processing_function`: points to a custom handler that performs any test case-specific post processing. If this is NULL, then the generic execution handler handles this.
