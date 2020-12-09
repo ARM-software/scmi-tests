@@ -1,5 +1,5 @@
 /** @file
- * Copyright (c) 2019, Arm Limited or its affiliates. All rights reserved.
+ * Copyright (c) 2019-2020, Arm Limited or its affiliates. All rights reserved.
  * SPDX-License-Identifier : Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,32 +15,33 @@
  * limitations under the License.
 **/
 
-#include"val_interface.h"
+#include "val_interface.h"
+#include "val_clock.h"
 
 #define TEST_NUM  (SCMI_CLOCK_TEST_NUM_BASE + 4)
-#define TEST_DESC "Clock attributes check                                 "
-#define MAX_RETURN_VALUE_SIZE 5
+#define TEST_DESC "Clock msg attributes invalid msg id check    "
 
-uint32_t clock_attributes_check(void)
+uint32_t clock_invalid_messageid_call(void)
 {
-    int32_t status;
-    uint32_t rsp_msg_hdr, cmd_msg_hdr;
-    uint32_t param_count, clock_id, num_clocks, attributes;
-    uint32_t return_value_count, return_values[MAX_RETURN_VALUE_SIZE];
+    int32_t  status;
+    uint32_t rsp_msg_hdr;
+    uint32_t cmd_msg_hdr;
+    size_t   param_count;
+    size_t   return_value_count;
+    uint32_t return_values[MAX_RETURNS_SIZE];
+    uint32_t *parameters;
+    uint32_t message_id;
 
     if (val_test_initialize(TEST_NUM, TEST_DESC) != VAL_STATUS_PASS)
         return VAL_STATUS_SKIP;
 
-    /* clock attributes cmd for invalid clock id should return NOT_FOUND status */
-
-    clock_id = val_clock_get_info(NUM_CLOCKS, 0) + 1;
-    val_print(VAL_PRINT_DEBUG, "\n\t[Check 1] Query with invalid clock_id %d", clock_id);
+    /* Sending invalid clock protocol cmd should fail */
+    val_print(VAL_PRINT_TEST, "\n     [Check 1] Invalid command invocation");
 
     VAL_INIT_TEST_PARAM(param_count, rsp_msg_hdr, return_value_count, status);
-    param_count++;
-    val_memset_zero(return_values, MAX_RETURN_VALUE_SIZE);
-    cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_CLOCK, CLOCK_ATTRIBUTES, COMMAND_MSG);
-    val_send_message(cmd_msg_hdr, param_count, &clock_id, &rsp_msg_hdr, &status,
+    parameters = NULL;
+    cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_CLOCK, CLOCK_INVALID_COMMAND, COMMAND_MSG);
+    val_send_message(cmd_msg_hdr, param_count, parameters, &rsp_msg_hdr, &status,
                      &return_value_count, return_values);
 
     if (val_compare_status(status, SCMI_NOT_FOUND) != VAL_STATUS_PASS)
@@ -49,38 +50,26 @@ uint32_t clock_attributes_check(void)
     if (val_compare_msg_hdr(cmd_msg_hdr, rsp_msg_hdr) != VAL_STATUS_PASS)
         return VAL_STATUS_FAIL;
 
-    /* Discover clock attributes for all clocks */
+    val_print_return_values(return_value_count, return_values);
 
-    num_clocks = val_clock_get_info(NUM_CLOCKS, 0);
-    for (clock_id = 0; clock_id < num_clocks; clock_id++)
-    {
-        val_print(VAL_PRINT_DEBUG, "\n\t[Check 2] Query with clock_id %d", clock_id);
+    /* Query support for invalid clock protocol command should return status NOT_FOUND */
+    val_print(VAL_PRINT_TEST, "\n     [Check 2] Query undefined command support");
 
-        VAL_INIT_TEST_PARAM(param_count, rsp_msg_hdr, return_value_count, status);
-        param_count++;
-        val_memset_zero(return_values, MAX_RETURN_VALUE_SIZE);
-        cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_CLOCK, CLOCK_PROTOCOL_MESSAGE_ATTRIBUTES,
-                                         COMMAND_MSG);
-        val_send_message(cmd_msg_hdr, param_count, &clock_id, &rsp_msg_hdr, &status,
+    VAL_INIT_TEST_PARAM(param_count, rsp_msg_hdr, return_value_count, status);
+    message_id = CLOCK_INVALID_COMMAND;
+    param_count++;
+    cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_CLOCK, CLOCK_PROTOCOL_MESSAGE_ATTRIBUTES,
+                                     COMMAND_MSG);
+    val_send_message(cmd_msg_hdr, param_count, &message_id, &rsp_msg_hdr, &status,
                      &return_value_count, return_values);
 
-        if (val_compare_status(status, SCMI_SUCCESS) != VAL_STATUS_PASS)
-            return VAL_STATUS_FAIL;
+    if (val_compare_status(status, SCMI_NOT_FOUND) != VAL_STATUS_PASS)
+        return VAL_STATUS_FAIL;
 
-        if (val_compare_msg_hdr(cmd_msg_hdr, rsp_msg_hdr) != VAL_STATUS_PASS)
-            return VAL_STATUS_FAIL;
+    if (val_compare_msg_hdr(cmd_msg_hdr, rsp_msg_hdr) != VAL_STATUS_PASS)
+        return VAL_STATUS_FAIL;
 
-        attributes = return_values[0];
-        if (val_reserved_bits_check_is_zero(VAL_EXTRACT_BITS(attributes, 2, 31) !=
-                                            VAL_STATUS_PASS))
-            return VAL_STATUS_FAIL;
-
-        val_clock_save_info(CLOCK_ATTRIBUTE, clock_id, return_values[0]);
-        val_clock_save_name(CLOCK_NAME, clock_id, (uint8_t *) &return_values[1]);
-        val_print(VAL_PRINT_INFO, "\n\tCLOCK_ENABLED: %d", VAL_EXTRACT_BITS(attributes, 0, 0));
-        val_print(VAL_PRINT_INFO, "\n\tCLOCK_NAME: %s                                           ",
-                                (uint8_t *) &return_values[1]);
-    }
+    val_print_return_values(return_value_count, return_values);
 
     return VAL_STATUS_PASS;
 }

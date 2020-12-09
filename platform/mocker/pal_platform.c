@@ -1,5 +1,5 @@
 /** @file
- * Copyright (c) 2019, Arm Limited or its affiliates. All rights reserved.
+ * Copyright (c) 2019-2020, Arm Limited or its affiliates. All rights reserved.
  * SPDX-License-Identifier : Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,21 +16,80 @@
 **/
 
 #include <pal_platform.h>
-#include <pal_expected.h>
 #include <pal_interface.h>
 
-void pal_send_message(uint32_t message_header_send, uint32_t parameter_count,
+void pal_send_message(uint32_t message_header_send, size_t parameter_count,
         const uint32_t *parameters, uint32_t *message_header_rcv, int32_t *status,
-        uint32_t *return_values_count, uint32_t *return_values)
+        size_t *return_values_count, uint32_t *return_values)
 {
-    mocker_send_message(message_header_send, parameter_count, parameters,
-                        message_header_rcv, status, return_values_count,
-                        return_values);
+    int message_id;
+    int protocol_id;
+
+    *message_header_rcv = message_header_send;
+    protocol_id = SCMI_EXRACT_BITS(message_header_send,
+            PROTOCOL_ID_HIGH, PROTOCOL_ID_LOW);
+    message_id = SCMI_EXRACT_BITS(message_header_send,
+            MESSAGE_ID_HIGH, MESSAGE_ID_LOW);
+
+    switch (protocol_id)
+    {
+    case BASE_PROTOCOL_ID:
+        base_send_message(message_id, parameter_count, parameters, status,
+                return_values_count, return_values);
+        break;
+    case POWER_DOMAIN_PROTOCOL_ID:
+        power_send_message(message_id, parameter_count, parameters, status,
+                return_values_count, return_values);
+        break;
+    case SYSTEM_POWER_PROTOCOL_ID:
+        system_power_send_message(message_id, parameter_count, parameters, status,
+                return_values_count, return_values);
+        break;
+    case PERFORMANCE_PROTOCOL_ID:
+        performance_send_message(message_id, parameter_count, parameters, status,
+                return_values_count, return_values);
+        break;
+    case CLOCK_PROTOCOL_ID:
+        clock_send_message(message_id, parameter_count, parameters, status,
+                return_values_count, return_values);
+        break;
+    case SENSOR_PROTOCOL_ID:
+        sensor_send_message(message_id, parameter_count, parameters, status,
+                return_values_count, return_values);
+        break;
+    case RESET_PROTOCOL_ID:
+        reset_send_message(message_id, parameter_count, parameters, status,
+                return_values_count, return_values);
+        break;
+    default:
+        printf("\nProtocol: %d\n", message_id);
+        assert(!"\nUnknown protocol id\n");
+        break;
+    }
 }
 
-void pal_initialize_system(void)
+void pal_receive_delayed_response(uint32_t *message_header_rcv, int32_t *status,
+        size_t *return_values_count, uint32_t *return_values)
 {
-    mocker_fill_protocols_database();
+    return ;
+}
+
+void pal_receive_notification(uint32_t *message_header_rcv, size_t *return_values_count,
+       uint32_t *return_values)
+{
+    return ;
+}
+
+uint32_t pal_initialize_system(void *info)
+{
+    fill_base_protocol();
+    fill_power_protocol();
+    fill_performance_protocol();
+    fill_sensor_protocol();
+    fill_clock_protocol();
+    fill_reset_protocol();
+
+    return PAL_STATUS_PASS;
 }
 
 void pal_print(uint32_t print_level, const char *format, va_list args)
@@ -38,62 +97,9 @@ void pal_print(uint32_t print_level, const char *format, va_list args)
     vprintf(format, args);
 }
 
-char *pal_base_get_protocol_vendor_name(void)
+void *pal_memcpy(void *dest, const void *src, size_t size)
 {
-    return vendor_name;
-}
-
-char *pal_base_get_expected_subvendor_name(void)
-{
-    return subvendor_name;
-}
-
-uint32_t pal_base_get_expected_implementation_version(void)
-{
-    return implementation_version;
-}
-
-uint32_t pal_base_get_expected_num_agents(void)
-{
-    return NUM_ELEMS(agents);
-}
-
-uint32_t pal_pwr_domain_get_expected_num_domains(void)
-{
-    return num_power_domains;
-}
-
-uint32_t pal_get_expected_num_supported_protocols(void)
-{
-    return NUM_ELEMS(supported_protocols);
-}
-
-uint32_t pal_agent_get_accessible_device(uint32_t agent_id)
-{
-    return agent_get_accessible_device(agent_id);
-}
-
-uint32_t pal_agent_get_inaccessible_device(uint32_t agent_id)
-{
-    return agent_get_inaccessible_device(agent_id);
-}
-
-uint32_t pal_device_get_accessible_protocol(uint32_t device_id)
-{
-    return device_get_accessible_protocol(device_id);
-}
-
-uint32_t pal_clock_get_expected_num_clocks(void)
-{
-    return num_clocks;
-}
-
-uint32_t pal_performance_get_expected_num_domains(void)
-{
-    return num_performance_domains;
-}
-
-uint32_t pal_sensors_get_expected_num_sensors(void)
-{
-    return num_sensors;
+    if (dest == NULL || src == NULL || size == 0)
+        return NULL;
+    return memcpy(dest, src, size);
 }
