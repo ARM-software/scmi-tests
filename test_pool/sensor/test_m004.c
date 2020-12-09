@@ -1,5 +1,5 @@
 /** @file
- * Copyright (c) 2019, Arm Limited or its affiliates. All rights reserved.
+ * Copyright (c) 2019-2020, Arm Limited or its affiliates. All rights reserved.
  * SPDX-License-Identifier : Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,49 +15,61 @@
  * limitations under the License.
 **/
 
-#include"val_interface.h"
+#include "val_interface.h"
+#include "val_sensor.h"
 
 #define TEST_NUM  (SCMI_SENSOR_TEST_NUM_BASE + 4)
-#define TEST_DESC "Sensor invalid message id check                        "
+#define TEST_DESC "Sensor msg attributes invalid msg id check   "
 
 uint32_t sensor_invalid_messageid_call(void)
 {
-    int32_t status;
-    uint32_t rsp_msg_hdr, cmd_msg_hdr;
-    uint32_t param_count, *parameters, message_id;
-    uint32_t return_value_count, attributes;
+    int32_t  status;
+    uint32_t rsp_msg_hdr;
+    uint32_t cmd_msg_hdr;
+    size_t   param_count;
+    size_t   return_value_count;
+    uint32_t return_values[MAX_RETURNS_SIZE];
+    uint32_t *parameters;
+    uint32_t message_id;
 
     if (val_test_initialize(TEST_NUM, TEST_DESC) != VAL_STATUS_PASS)
         return VAL_STATUS_SKIP;
 
     /* Sending invalid sensor protocol cmd should fail */
-
-    val_print(VAL_PRINT_DEBUG, "\n\t[Check 1] Invalid command invocation");
+    val_print(VAL_PRINT_TEST, "\n     [Check 1] Invalid command invocation");
 
     VAL_INIT_TEST_PARAM(param_count, rsp_msg_hdr, return_value_count, status);
     parameters = NULL;
-    attributes = 0;
     cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_SENSOR, SENSOR_INVALID_COMMAND, COMMAND_MSG);
     val_send_message(cmd_msg_hdr, param_count, parameters, &rsp_msg_hdr, &status,
-                     &return_value_count, &attributes);
+                     &return_value_count, return_values);
 
     if (val_compare_status(status, SCMI_NOT_FOUND) != VAL_STATUS_PASS)
         return VAL_STATUS_FAIL;
 
-    /* Query support for invalid sensor protocol command should return status NOT_FOUND */
+    if (val_compare_msg_hdr(cmd_msg_hdr, rsp_msg_hdr) != VAL_STATUS_PASS)
+        return VAL_STATUS_FAIL;
 
-    val_print(VAL_PRINT_DEBUG, "\n\t[Check 2] Query undefined command support");
+    val_print_return_values(return_value_count, return_values);
+
+    /* Query support for invalid sensor protocol command should return status NOT_FOUND */
+    val_print(VAL_PRINT_TEST, "\n     [Check 2] Query undefined command support");
 
     VAL_INIT_TEST_PARAM(param_count, rsp_msg_hdr, return_value_count, status);
     message_id = SENSOR_INVALID_COMMAND;
-    attributes = 0;
+    param_count++;
     cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_SENSOR, SENSOR_PROTOCOL_MESSAGE_ATTRIBUTES,
                                      COMMAND_MSG);
     val_send_message(cmd_msg_hdr, param_count, &message_id, &rsp_msg_hdr, &status,
-                     &return_value_count, &attributes);
+                     &return_value_count, return_values);
 
     if (val_compare_status(status, SCMI_NOT_FOUND) != VAL_STATUS_PASS)
         return VAL_STATUS_FAIL;
+
+    if (val_compare_msg_hdr(cmd_msg_hdr, rsp_msg_hdr) != VAL_STATUS_PASS)
+        return VAL_STATUS_FAIL;
+
+    val_print_return_values(return_value_count, return_values);
 
     return VAL_STATUS_PASS;
 }

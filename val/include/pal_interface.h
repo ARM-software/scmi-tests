@@ -42,27 +42,71 @@
 
 #define SCMI_NAME_STR_SIZE 16
 #define NUM_ELEMS(x) (sizeof(x) / sizeof((x)[0]))
+#define MAX_RETURNS_SIZE 32
 
-void pal_send_message(uint32_t message_header_send, uint32_t parameter_count,
+/************  PAL API'S  ****************/
+
+uint32_t pal_initialize_system(void *info);
+void pal_send_message(uint32_t message_header_send, size_t parameter_count,
         const uint32_t *parameters, uint32_t *message_header_rcv, int32_t *status,
-        uint32_t *return_values_count, uint32_t *return_values);
-void pal_fill_protocols_database(void);
-uint32_t pal_strcpy(uint8_t *dst_ptr, uint8_t *src_ptr);
-uint32_t pal_strcmp(uint8_t *dst_ptr, uint8_t *src_ptr, uint32_t len);
+        size_t *return_values_count, uint32_t *return_values);
 void pal_print(uint32_t level, const char *string, va_list args);
-void pal_memset_zero(uint32_t length, uint32_t *buffer);
-void pal_initialize_system(void);
+void *pal_memcpy(void *dest, const void *src, size_t size);
+
+void pal_receive_delayed_response(uint32_t *message_header_rcv, int32_t *status,
+        size_t *return_values_count, uint32_t *return_values);
+void pal_receive_notification(uint32_t *message_header_rcv, size_t *return_values_count,
+                              uint32_t *return_values);
 uint32_t pal_agent_get_accessible_device(uint32_t agent_id);
 uint32_t pal_device_get_accessible_protocol(uint32_t device_id);
 uint32_t pal_agent_get_inaccessible_device(uint32_t agent_id);
-uint32_t pal_base_get_expected_protocol_version(void);
+uint32_t pal_check_trusted_agent(uint32_t agent_id);
+
+/* BASE protocol specific API's */
 char *pal_base_get_expected_vendor_name(void);
 char *pal_base_get_expected_subvendor_name(void);
 uint32_t pal_base_get_expected_implementation_version(void);
 uint32_t pal_base_get_expected_num_agents(void);
-uint32_t pal_pwr_domain_get_expected_protocol_version(void);
-uint32_t pal_pwr_domain_get_expected_num_domains(void);
-uint32_t pal_get_expected_num_supported_protocols(void);
+uint32_t pal_base_get_expected_num_protocols(void);
+
+/* CLOCK protocol specific APS's */
+#ifdef CLOCK_PROTOCOL
 uint32_t pal_clock_get_expected_num_clocks(void);
+uint32_t pal_clock_get_expected_max_async_cmd(void);
+uint32_t pal_clock_get_expected_number_of_rates(uint32_t clock_id);
+uint32_t pal_check_clock_config_change_support(uint32_t clock_id);
+#endif
+
+/* SENSOR protocol specific API's */
+#ifdef SENSOR_PROTOCOL
+uint32_t pal_sensor_get_expected_num_sensors(void);
+uint32_t pal_sensor_get_expected_stats_addr_low(void);
+uint32_t pal_sensor_get_expected_stats_addr_high(void);
+uint32_t pal_sensor_get_expected_stats_addr_len(void);
+#endif
+
+/* PERFORMANCE protocol specific API's */
+#ifdef PERFORMANCE_PROTOCOL
+uint32_t  pal_performance_get_expected_num_domains(void);
+uint32_t  pal_performance_get_expected_stats_addr_low(void);
+uint32_t  pal_performance_get_expected_stats_addr_high(void);
+uint32_t  pal_performance_get_expected_stats_addr_len(void);
+uint8_t  *pal_performance_get_expected_name(uint32_t domain_id);
+uint32_t  pal_performance_get_expected_number_of_level(uint32_t domain_id);
+#endif
+
+/* POWER DOMAIN protocol specific API's */
+#ifdef POWER_DOMAIN_PROTOCOL
+uint32_t pal_power_get_expected_num_domains(void);
+uint32_t pal_power_get_expected_stats_addr_low(void);
+uint32_t pal_power_get_expected_stats_addr_high(void);
+uint32_t pal_power_get_expected_stats_addr_len(void);
+#endif
+
+/* RESET protocol specific API's */
+#ifdef RESET_PROTOCOL
+uint32_t pal_reset_get_expected_num_domains(void);
+uint8_t *pal_reset_get_expected_name(uint32_t domain_id);
+#endif
 
 #endif

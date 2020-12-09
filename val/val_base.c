@@ -1,5 +1,5 @@
 /** @file
- * Copyright (c) 2019, Arm Limited or its affiliates. All rights reserved.
+ * Copyright (c) 2019-2020, Arm Limited or its affiliates. All rights reserved.
  * SPDX-License-Identifier : Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +19,48 @@
 #include "val_base.h"
 
 BASE_INFO_s g_base_info_table;
+
+/**
+  @brief   This API is called from app layer to execute base tests
+  @param   none
+  @return  test execution result
+**/
+uint32_t val_base_execute_tests(void)
+{
+    uint32_t version = 0;
+
+    val_memset((void *)&g_base_info_table, 0, sizeof(g_base_info_table));
+
+    if (RUN_TEST(base_query_protocol_version(&version)))
+        return VAL_STATUS_FAIL;
+
+    RUN_TEST(base_query_protocol_attributes());
+    RUN_TEST(base_query_mandatory_command_support());
+    RUN_TEST(base_invalid_messageid_call());
+    RUN_TEST(base_query_vendor_name());
+    RUN_TEST(base_query_subvendor_info());
+    RUN_TEST(base_query_implementation_version());
+    RUN_TEST(base_query_protocol_list());
+    if (version == PROTOCOL_VERSION_1) {
+        RUN_TEST(base_discover_agent_v1());
+    }
+    if (version == PROTOCOL_VERSION_2) {
+        RUN_TEST(base_discover_agent());
+    }
+    RUN_TEST(base_query_notify_error_support());
+
+    if (version == PROTOCOL_VERSION_2) {
+        RUN_TEST(base_set_device_permissions_check());
+        RUN_TEST(base_deny_restore_device_access());
+        RUN_TEST(base_set_protocol_permissions_check());
+        RUN_TEST(base_deny_restore_protocol_access());
+        RUN_TEST(base_reset_agent_configuration_check());
+        RUN_TEST(base_restore_device_access_with_reset_agent_configuration());
+        RUN_TEST(base_restore_protocol_access_with_reset_agent_configuration());
+    }
+
+    return VAL_STATUS_PASS;
+}
 
 /**
   @brief   This API is used to set base protocol info
@@ -42,7 +84,7 @@ void val_base_save_info(uint32_t param_identifier, uint32_t param_value)
         g_base_info_table.test_agent_id = param_value;
         break;
     default:
-        val_print(VAL_PRINT_WARN, "\nUnidentified base parameter %d", param_identifier);
+        val_print(VAL_PRINT_ERR, "\nUnidentified base parameter %d", param_identifier);
     }
 }
 
@@ -72,7 +114,7 @@ uint32_t val_base_get_info(uint32_t param_identifier)
         param_value = g_base_info_table.implementation_version;
         break;
     default:
-        val_print(VAL_PRINT_WARN, "\nUnidentified parameter %d", param_identifier);
+        val_print(VAL_PRINT_ERR, "\nUnidentified parameter %d", param_identifier);
     }
 
     return param_value;
@@ -100,20 +142,56 @@ void val_base_save_name(uint32_t param_identifier, uint8_t *param_value)
         val_strcpy(&(g_base_info_table.test_agent_name[0]), param_value);
         break;
     default:
-        val_print(VAL_PRINT_WARN, "\nUnidentified parameter %d", param_identifier);
+        val_print(VAL_PRINT_ERR, "\nUnidentified parameter %d", param_identifier);
     }
 }
 
 /**
-  @brief   This API is used to get base protocol implemented version
-           1. Caller       -  Test Suite.
-           2. Prerequisite -  Base protocol info table.
+  @brief   This API is used for checking vendor name
   @param   none
-  @return  base protocol version
+  @return  vendor name
 **/
-uint32_t val_base_get_expected_protocol_version(void)
+char *val_base_get_expected_vendor_name(void)
 {
-    return BASE_VERSION;
+    return pal_base_get_expected_vendor_name();
 }
 
+/**
+  @brief   This API is used for checking subvendor name
+  @param   none
+  @return  subvendor name
+**/
+char *val_base_get_expected_subvendor_name(void)
+{
+    return pal_base_get_expected_subvendor_name();
+}
 
+/**
+  @brief   This API is used for checking implementation version
+  @param   none
+  @return  implementation version
+**/
+uint32_t val_base_get_expected_implementation_version(void)
+{
+    return pal_base_get_expected_implementation_version();
+}
+
+/**
+  @brief   This API is used for checking num of agents
+  @param   none
+  @return  num of agents
+**/
+uint32_t val_base_get_expected_num_agents(void)
+{
+    return pal_base_get_expected_num_agents();
+}
+
+/**
+  @brief   This API is used for checking num of protocols
+  @param   none
+  @return  num of protocols agent have access
+**/
+uint32_t val_base_get_expected_num_protocols(void)
+{
+    return pal_base_get_expected_num_protocols();
+}

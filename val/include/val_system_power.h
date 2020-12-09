@@ -1,5 +1,5 @@
 /** @file
- * Copyright (c) 2019, Arm Limited or its affiliates. All rights reserved.
+ * Copyright (c) 2019-2020, Arm Limited or its affiliates. All rights reserved.
  * SPDX-License-Identifier : Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,11 +18,24 @@
 #ifndef __VAL_SYSTEM_POWER_H__
 #define __VAL_SYSTEM_POWER_H__
 
-#define SYSTEM_POWER_VERSION 0x00010000
+#define VERSION_OFFSET                0
+#define ATTRIBUTE_OFFSET              0
+
+#define INVALID_FLAG_VAL                    0xF
+#define INVALID_NOTIFY_EN_VAL               0xF
 
 typedef struct {
     uint32_t system_power_reset_support;
     uint32_t system_power_suspend_support;
 } SYSTEM_POWER_INFO_s;
+
+/* Common Tests */
+uint32_t system_power_query_protocol_version(uint32_t *version);
+uint32_t system_power_query_protocol_attributes(void);
+uint32_t system_power_query_mandatory_command_support(void);
+uint32_t system_power_invalid_messageid_call(void);
+uint32_t system_power_state_get_check(void);
+uint32_t system_power_state_set_invalid_parameters(void);
+uint32_t system_power_state_notify_invalid_parameters(void);
 
 #endif
