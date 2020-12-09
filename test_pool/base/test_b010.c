@@ -51,6 +51,7 @@ uint32_t base_invalid_messageid_call(void)
     VAL_INIT_TEST_PARAM(param_count, rsp_msg_hdr, return_value_count, status);
     message_id = BASE_INVALID_COMMAND;
     attributes = 0;
+    param_count = 1;
     cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_BASE, BASE_PROTOCOL_MESSAGE_ATTRIBUTES, COMMAND_MSG);
     val_send_message(cmd_msg_hdr, param_count, &message_id, &rsp_msg_hdr, &status,
                      &return_value_count, &attributes);
