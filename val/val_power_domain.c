@@ -1,5 +1,5 @@
 /** @file
- * Copyright (c) 2019, Arm Limited or its affiliates. All rights reserved.
+ * Copyright (c) 2019-2020, Arm Limited or its affiliates. All rights reserved.
  * SPDX-License-Identifier : Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,11 +14,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 **/
+#ifdef POWER_DOMAIN_PROTOCOL
 
 #include "val_interface.h"
 #include "val_power_domain.h"
 
-POWER_DOMAIN_INFO_s g_power_domain_info_table;
+static POWER_DOMAIN_INFO_s g_power_domain_info_table;
+
+/**
+  @brief   This API is called from app layer to execute power domain tests
+  @param   none
+  @return  test execution result
+**/
+uint32_t val_power_domain_execute_tests(void)
+{
+    uint32_t version = 0;
+
+    val_memset((void *)&g_power_domain_info_table, 0, sizeof(g_power_domain_info_table));
+
+    if (val_agent_check_protocol_support(PROTOCOL_POWER_DOMAIN)) {
+        if (RUN_TEST(power_domain_query_protocol_version(&version)))
+            return VAL_STATUS_FAIL;
+
+        RUN_TEST(power_domain_query_protocol_attributes());
+        RUN_TEST(power_domain_query_mandatory_command_support());
+        RUN_TEST(power_domain_invalid_messageid_call());
+        RUN_TEST(power_domain_query_domain_attributes());
+        RUN_TEST(power_domain_query_domain_attributes_invalid_doamin());
+        RUN_TEST(power_domain_set_power_state_check());
+        RUN_TEST(power_domain_set_power_state_unsupported_domain_check());
+        RUN_TEST(power_domain_set_power_state_check_invalid_domain());
+        RUN_TEST(power_domain_get_power_state_check());
+        RUN_TEST(power_domain_get_power_state_check_invalid_domain());
+        RUN_TEST(power_domain_power_state_notify_check());
+        RUN_TEST(power_domain_power_state_notify_unspported_domain_check());
+        RUN_TEST(power_domain_power_state_notify_invalid_domain_check());
+
+        if (version == PROTOCOL_VERSION_2) {
+            RUN_TEST(power_domain_power_state_change_requested_notify_check());
+            RUN_TEST(power_domain_power_state_change_requested_notify_invalid_domain_check());
+        }
+    }
+    else
+        val_print(VAL_PRINT_ERR, "\n Calling agent have no access to POWER DOMAIN protocol");
+
+    return VAL_STATUS_PASS;
+}
 
 /**
   @brief   This API is used to set power_domain protocol info
@@ -55,7 +96,7 @@ void val_power_domain_save_info(uint32_t param_identifier, uint32_t pd_id, uint3
         g_power_domain_info_table.pd_sync_support[pd_id] = param_value;
         break;
     default:
-        val_print(VAL_PRINT_WARN, "\n\tUnidentified parameter %d", param_identifier);
+        val_print(VAL_PRINT_WARN, "\nUnidentified parameter %d", param_identifier);
     }
 }
 
@@ -95,7 +136,7 @@ uint32_t val_power_domain_get_info(uint32_t pd_id, uint32_t param_identifier)
         param_value = g_power_domain_info_table.pd_sync_support[pd_id];
         break;
     default:
-        val_print(VAL_PRINT_WARN, "\n\tUnidentified parameter %d", param_identifier);
+        val_print(VAL_PRINT_WARN, "\nUnidentified parameter %d", param_identifier);
     }
 
     return param_value;
@@ -118,18 +159,48 @@ void val_power_domain_save_name(uint32_t param_identifier, uint32_t pd_id, uint8
         val_strcpy(&g_power_domain_info_table.pd_name[pd_id][0], param_value);
         break;
     default:
-        val_print(VAL_PRINT_WARN, "\n\tUnidentified parameter %d", param_identifier);
+        val_print(VAL_PRINT_WARN, "\nUnidentified parameter %d", param_identifier);
     }
 }
 
 /**
-  @brief   This API is used to get power domain protocol implemented version
-           1. Caller       -  Test Suite.
-           2. Prerequisite -  Power domain protocol info table.
+  @brief   This API is used for checking num of power domain
   @param   none
-  @return  none
+  @return  num of power domain
 **/
-uint32_t val_power_domain_get_expected_protocol_version(void)
+uint32_t val_power_get_expected_num_domains(void)
 {
-    return POWER_DOMAIN_VERSION;
+    return pal_power_get_expected_num_domains();
 }
+
+/**
+  @brief   This API is used for checking power domain statistics addr low
+  @param   none
+  @return  statistics addr low
+**/
+uint32_t val_power_get_expected_stats_addr_low(void)
+{
+    return pal_power_get_expected_stats_addr_low();
+}
+
+/**
+  @brief   This API is used for checking power domain statistics addr high
+  @param   none
+  @return  statistics addr high
+**/
+uint32_t val_power_get_expected_stats_addr_high(void)
+{
+    return pal_power_get_expected_stats_addr_high();
+}
+
+/**
+  @brief   This API is used for checking power domain statistics addr len
+  @param   none
+  @return  statistics addr len
+**/
+uint32_t val_power_get_expected_stats_addr_len(void)
+{
+    return pal_power_get_expected_stats_addr_len();
+}
+
+#endif

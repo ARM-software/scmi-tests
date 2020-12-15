@@ -1,5 +1,5 @@
 /** @file
- * Copyright (c) 2019, Arm Limited or its affiliates. All rights reserved.
+ * Copyright (c) 2019-2020, Arm Limited or its affiliates. All rights reserved.
  * SPDX-License-Identifier : Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,32 +15,34 @@
  * limitations under the License.
 **/
 
-#include"val_interface.h"
+#include "val_interface.h"
+#include "val_base.h"
 
 #define TEST_NUM  (SCMI_BASE_TEST_NUM_BASE + 3)
-#define TEST_DESC "Base Protocol mandatory command support check          "
+#define TEST_DESC "Base msg attributes mandatory cmd check      "
 
 uint32_t base_query_mandatory_command_support(void)
 {
-    int32_t status;
-    uint32_t rsp_msg_hdr, cmd_msg_hdr;
-    uint32_t param_count, message_id;
-    uint32_t return_value_count, attributes;
+    int32_t  status;
+    uint32_t rsp_msg_hdr;
+    uint32_t cmd_msg_hdr;
+    size_t   param_count;
+    size_t   return_value_count;
+    uint32_t return_values[MAX_RETURNS_SIZE];
+    uint32_t message_id;
 
     if (val_test_initialize(TEST_NUM, TEST_DESC) != VAL_STATUS_PASS)
         return VAL_STATUS_SKIP;
 
     /* Mandatory cmd BASE DISCOVER VENDOR should be supported */
-
-    val_print(VAL_PRINT_DEBUG, "\n\t[Check 1] BASE DISCOVER VENDOR support");
+    val_print(VAL_PRINT_TEST, "\n     [Check 1] BASE DISCOVER VENDOR support");
 
     VAL_INIT_TEST_PARAM(param_count, rsp_msg_hdr, return_value_count, status);
     message_id = BASE_DISCOVER_VENDOR;
     param_count++;
-    attributes = 0;
     cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_BASE, BASE_PROTOCOL_MESSAGE_ATTRIBUTES, COMMAND_MSG);
     val_send_message(cmd_msg_hdr, param_count, &message_id, &rsp_msg_hdr, &status,
-                     &return_value_count, &attributes);
+                     &return_value_count, return_values);
 
     if (val_compare_status(status, SCMI_SUCCESS) != VAL_STATUS_PASS)
         return VAL_STATUS_FAIL;
@@ -48,20 +50,20 @@ uint32_t base_query_mandatory_command_support(void)
     if (val_compare_msg_hdr(cmd_msg_hdr, rsp_msg_hdr) != VAL_STATUS_PASS)
         return VAL_STATUS_FAIL;
 
-    if (val_reserved_bits_check_is_zero(attributes) != VAL_STATUS_PASS)
+    val_print_return_values(return_value_count, return_values);
+
+    if (val_reserved_bits_check_is_zero(return_values[ATTRIBUTE_OFFSET]) != VAL_STATUS_PASS)
         return VAL_STATUS_FAIL;
 
     /* Mandatory cmd BASE DISCOVER IMPLEMENTATION VERSION should be supported */
-
-    val_print(VAL_PRINT_DEBUG, "\n\t[Check 2] BASE DISCOVER IMPL VERSION support");
+    val_print(VAL_PRINT_TEST, "\n     [Check 2] BASE DISCOVER IMPL VERSION support");
 
     VAL_INIT_TEST_PARAM(param_count, rsp_msg_hdr, return_value_count, status);
     message_id = BASE_DISCOVER_IMPLEMENTATION_VERSION;
     param_count++;
-    attributes = 0;
     cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_BASE, BASE_PROTOCOL_MESSAGE_ATTRIBUTES, COMMAND_MSG);
     val_send_message(cmd_msg_hdr, param_count, &message_id, &rsp_msg_hdr, &status,
-                     &return_value_count, &attributes);
+                     &return_value_count, return_values);
 
     if (val_compare_status(status, SCMI_SUCCESS) != VAL_STATUS_PASS)
         return VAL_STATUS_FAIL;
@@ -69,20 +71,21 @@ uint32_t base_query_mandatory_command_support(void)
     if (val_compare_msg_hdr(cmd_msg_hdr, rsp_msg_hdr) != VAL_STATUS_PASS)
         return VAL_STATUS_FAIL;
 
-    if (val_reserved_bits_check_is_zero(attributes) != VAL_STATUS_PASS)
+    val_print_return_values(return_value_count, return_values);
+
+    if (val_reserved_bits_check_is_zero(return_values[ATTRIBUTE_OFFSET]) != VAL_STATUS_PASS)
         return VAL_STATUS_FAIL;
 
     /* Mandatory cmd BASE DISCOVER LIST PROTOCOLS should be supported */
 
-    val_print(VAL_PRINT_DEBUG, "\n\t[Check 3] BASE DISCOVER LIST PROTOCOLS support");
+    val_print(VAL_PRINT_TEST, "\n     [Check 3] BASE DISCOVER LIST PROTOCOLS support");
 
     VAL_INIT_TEST_PARAM(param_count, rsp_msg_hdr, return_value_count, status);
     message_id = BASE_DISCOVER_LIST_PROTOCOLS;
     param_count++;
-    attributes = 0;
     cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_BASE, BASE_PROTOCOL_MESSAGE_ATTRIBUTES, COMMAND_MSG);
     val_send_message(cmd_msg_hdr, param_count, &message_id, &rsp_msg_hdr, &status,
-                     &return_value_count, &attributes);
+                     &return_value_count, return_values);
 
     if (val_compare_status(status, SCMI_SUCCESS) != VAL_STATUS_PASS)
         return VAL_STATUS_FAIL;
@@ -90,7 +93,9 @@ uint32_t base_query_mandatory_command_support(void)
     if (val_compare_msg_hdr(cmd_msg_hdr, rsp_msg_hdr) != VAL_STATUS_PASS)
         return VAL_STATUS_FAIL;
 
-    if (val_reserved_bits_check_is_zero(attributes) != VAL_STATUS_PASS)
+    val_print_return_values(return_value_count, return_values);
+
+    if (val_reserved_bits_check_is_zero(return_values[ATTRIBUTE_OFFSET]) != VAL_STATUS_PASS)
         return VAL_STATUS_FAIL;
 
     return VAL_STATUS_PASS;

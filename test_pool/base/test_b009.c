@@ -1,5 +1,5 @@
 /** @file
- * Copyright (c) 2019, Arm Limited or its affiliates. All rights reserved.
+ * Copyright (c) 2019-2020, Arm Limited or its affiliates. All rights reserved.
  * SPDX-License-Identifier : Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,31 +16,48 @@
 **/
 
 #include"val_interface.h"
+#include "val_base.h"
 
 #define TEST_NUM  (SCMI_BASE_TEST_NUM_BASE + 9)
-#define TEST_DESC "Base query protocol list                               "
-#define MAX_RETURN_VALUE_SIZE 4
+#define TEST_DESC "Base discover agent check                    "
 
-uint32_t base_query_protocol_list(void)
+uint32_t base_discover_agent(void)
 {
-    int32_t status;
-    uint32_t rsp_msg_hdr, cmd_msg_hdr;
-    uint32_t param_count, skip, num_protocols;
-    uint32_t return_value_count, return_values[MAX_RETURN_VALUE_SIZE];
+    int32_t  status;
+    uint32_t rsp_msg_hdr;
+    uint32_t cmd_msg_hdr;
+    size_t   param_count;
+    size_t   return_value_count;
+    uint32_t return_values[MAX_RETURNS_SIZE];
+    uint32_t message_id, agent_id, num_agents;
+    uint8_t *name;
 
     if (val_test_initialize(TEST_NUM, TEST_DESC) != VAL_STATUS_PASS)
         return VAL_STATUS_SKIP;
 
-    /* Query list of all supported protocols */
-
-    val_print(VAL_PRINT_DEBUG, "\n\t[Check 1] Send valid skip value 0");
+    /* If BASE DISCOVER AGENT not supported, skip the test */
+    val_print(VAL_PRINT_TEST, "\n     [Check 1] Check discover agent cmd support");
 
     VAL_INIT_TEST_PARAM(param_count, rsp_msg_hdr, return_value_count, status);
-    skip = 0;
+    message_id = BASE_DISCOVER_AGENT;
     param_count++;
-    val_memset_zero(return_values, MAX_RETURN_VALUE_SIZE);
-    cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_BASE, BASE_DISCOVER_LIST_PROTOCOLS, COMMAND_MSG);
-    val_send_message(cmd_msg_hdr, param_count, &skip, &rsp_msg_hdr, &status,
+    cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_BASE, BASE_PROTOCOL_MESSAGE_ATTRIBUTES, COMMAND_MSG);
+    val_send_message(cmd_msg_hdr, param_count, &message_id, &rsp_msg_hdr, &status,
+                     &return_value_count, return_values);
+
+    if (status == SCMI_NOT_FOUND) {
+        val_print(VAL_PRINT_ERR, "\n       BASE_DISCOVER_AGENT not supported           ");
+        return VAL_STATUS_SKIP;
+    }
+
+    /* Agent name for platform agent id should start with "platform" */
+    val_print(VAL_PRINT_TEST, "\n     [Check 2] Query with platform agent id %d", 0);
+
+    VAL_INIT_TEST_PARAM(param_count, rsp_msg_hdr, return_value_count, status);
+    agent_id = 0; /* agent id 0 is for platform */
+    param_count++;
+    cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_BASE, BASE_DISCOVER_AGENT, COMMAND_MSG);
+    val_send_message(cmd_msg_hdr, param_count, &agent_id, &rsp_msg_hdr, &status,
                      &return_value_count, return_values);
 
     if (val_compare_status(status, SCMI_SUCCESS) != VAL_STATUS_PASS)
@@ -49,28 +66,97 @@ uint32_t base_query_protocol_list(void)
     if (val_compare_msg_hdr(cmd_msg_hdr, rsp_msg_hdr) != VAL_STATUS_PASS)
         return VAL_STATUS_FAIL;
 
-    num_protocols = val_base_get_info(BASE_NUM_PROTOCOLS);
-    if (num_protocols == return_values[0])
-        val_print(VAL_PRINT_DEBUG, "\n\tCHECK NUM PROTOCOLS: PASSED [%d]", num_protocols);
-    else {
-        val_print(VAL_PRINT_ERR, "\n\tCHECK NUM PROTOCOLS: FAILED                            ");
+    val_print_return_values(return_value_count, return_values);
+
+    if (agent_id != return_values[AGENT_ID_OFFSET]) {
+        val_print(VAL_PRINT_ERR, "\n       CHECK AGENT ID : FAILED");
+        val_print(VAL_PRINT_ERR, "\n           EXPECTED   : 0x%08x                ", agent_id);
+        val_print(VAL_PRINT_ERR, "\n           RECEIVED   : 0x%08x                ",
+                                                                 return_values[AGENT_ID_OFFSET]);
         return VAL_STATUS_FAIL;
     }
+    val_print(VAL_PRINT_TEST, "\n       CHECK AGENT ID : PASSED [%d]",
+                                                            return_values[AGENT_ID_OFFSET]);
 
-    /* DISCOVER_LIST_PROTOCOLS with invalid skip value should return INVALID PARAMETERS status */
+    name = (uint8_t *) &return_values[AGENT_NAME_OFFSET];
+    if (val_strcmp((uint8_t *)"platform", name, 8) != VAL_STATUS_PASS) {
+        val_print(VAL_PRINT_ERR, "\n       CHECK NAME     : FAILED");
+        val_print(VAL_PRINT_ERR, "\n           EXPECTED   : %s", "platform*");
+        val_print(VAL_PRINT_ERR, "\n           RECEIVED   : %20s", name);
+        return VAL_STATUS_FAIL;
+    }
+    val_print(VAL_PRINT_TEST, "\n       CHECK NAME     : PASSED [%s]", name);
 
-    val_print(VAL_PRINT_DEBUG, "\n\t[Check 2] Send invalid skip value");
-
+    /* Agent id 0xFFFFFFFF should return agent own name */
+    agent_id = 0xFFFFFFFF; /* agent id 0xFFFFFFFF is for self */
+    val_print(VAL_PRINT_TEST, "\n     [Check 3] Query with agent id %x", agent_id);
     VAL_INIT_TEST_PARAM(param_count, rsp_msg_hdr, return_value_count, status);
-    skip = 8; /* skip value 8 is invalid as SCMI v2 specifications has only 7 protocols */
     param_count++;
-    val_memset_zero(return_values, MAX_RETURN_VALUE_SIZE);
-    cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_BASE, BASE_DISCOVER_LIST_PROTOCOLS, COMMAND_MSG);
-    val_send_message(cmd_msg_hdr, param_count, &skip, &rsp_msg_hdr, &status,
+    cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_BASE, BASE_DISCOVER_AGENT, COMMAND_MSG);
+    val_send_message(cmd_msg_hdr, param_count, &agent_id, &rsp_msg_hdr, &status,
                      &return_value_count, return_values);
 
-    if (val_compare_status(status, SCMI_INVALID_PARAMETERS) != VAL_STATUS_PASS)
+    if (val_compare_status(status, SCMI_SUCCESS) != VAL_STATUS_PASS)
         return VAL_STATUS_FAIL;
+
+    if (val_compare_msg_hdr(cmd_msg_hdr, rsp_msg_hdr) != VAL_STATUS_PASS)
+        return VAL_STATUS_FAIL;
+
+    val_print_return_values(return_value_count, return_values);
+
+    val_base_save_info(BASE_TEST_AGENT_ID, return_values[AGENT_ID_OFFSET]);
+    val_base_save_name(BASE_TEST_AGENT_NAME, (uint8_t *)&return_values[AGENT_NAME_OFFSET]);
+    val_print(VAL_PRINT_INFO, "\n       TEST_AGENT_ID  : %d", return_values[AGENT_ID_OFFSET]);
+    val_print(VAL_PRINT_INFO, "\n       TEST_AGENT_NAME: %s",
+                                            (uint8_t *) &return_values[AGENT_NAME_OFFSET]);
+
+    /* base discover agent cmd for invalid agent id should return NOT_FOUND status */
+    agent_id = 0;
+    num_agents = val_base_get_info(BASE_NUM_AGENTS);
+    while (++agent_id <= num_agents)
+    {
+        val_print(VAL_PRINT_TEST, "\n     [Check 4] Query with agent id %x", agent_id);
+        VAL_INIT_TEST_PARAM(param_count, rsp_msg_hdr, return_value_count, status);
+        param_count++;
+        cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_BASE, BASE_DISCOVER_AGENT, COMMAND_MSG);
+        val_send_message(cmd_msg_hdr, param_count, &agent_id, &rsp_msg_hdr, &status,
+                         &return_value_count, return_values);
+
+        if (val_compare_status(status, SCMI_SUCCESS) != VAL_STATUS_PASS)
+            return VAL_STATUS_FAIL;
+
+        if (val_compare_msg_hdr(cmd_msg_hdr, rsp_msg_hdr) != VAL_STATUS_PASS)
+            return VAL_STATUS_FAIL;
+
+        val_print_return_values(return_value_count, return_values);
+
+        if (agent_id != return_values[AGENT_ID_OFFSET]) {
+            val_print(VAL_PRINT_ERR, "\n       CHECK AGENT ID : FAILED");
+            val_print(VAL_PRINT_ERR, "\n           EXPECTED   : %x", agent_id);
+            val_print(VAL_PRINT_ERR, "\n           RECEIVED   : %x",
+                                                                return_values[AGENT_ID_OFFSET]);
+            return VAL_STATUS_FAIL;
+        }
+        val_print(VAL_PRINT_TEST, "\n       CHECK AGENT ID : PASSED [%d]",
+                                                                return_values[AGENT_ID_OFFSET]);
+        val_print(VAL_PRINT_INFO, "\n       AGENT_NAME     : %s",
+                                                (uint8_t *) &return_values[AGENT_NAME_OFFSET]);
+    }
+
+    val_print(VAL_PRINT_TEST, "\n     [Check 5] Query invalid agent id %d", agent_id);
+    VAL_INIT_TEST_PARAM(param_count, rsp_msg_hdr, return_value_count, status);
+    param_count++;
+    cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_BASE, BASE_DISCOVER_AGENT, COMMAND_MSG);
+    val_send_message(cmd_msg_hdr, param_count, &agent_id, &rsp_msg_hdr, &status,
+                     &return_value_count, return_values);
+
+    if (val_compare_status(status, SCMI_NOT_FOUND) != VAL_STATUS_PASS)
+        return VAL_STATUS_FAIL;
+
+    if (val_compare_msg_hdr(cmd_msg_hdr, rsp_msg_hdr) != VAL_STATUS_PASS)
+        return VAL_STATUS_FAIL;
+
+    val_print_return_values(return_value_count, return_values);
 
     return VAL_STATUS_PASS;
 }

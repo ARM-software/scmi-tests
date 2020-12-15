@@ -1,5 +1,5 @@
 /** @file
- * Copyright (c) 2019, Arm Limited or its affiliates. All rights reserved.
+ * Copyright (c) 2019-2020, Arm Limited or its affiliates. All rights reserved.
  * SPDX-License-Identifier : Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-**/
+ **/
 
 #include <poll.h>
 #include <sys/stat.h>
@@ -66,9 +66,9 @@ enum {
  * Mailbox Memory in the SCMI specification.
  *
  */
-int32_t sgm_send_message(uint32_t message_header_send, uint32_t parameter_count,
+int32_t sgm_send_message(uint32_t message_header_send, size_t parameter_count,
         const uint32_t *parameters, uint32_t *message_header_rcv, int32_t *status,
-        uint32_t *return_values_count, uint32_t *return_values)
+        size_t *return_values_count, uint32_t *return_values)
 {
     /* variables to be used in this function */
     uint32_t fd_signal, fd_message; // file descriptors for each mailbox interface
@@ -119,6 +119,7 @@ int32_t sgm_send_message(uint32_t message_header_send, uint32_t parameter_count,
      * */
     fd_message = open(MB_MESSAGE_FILE, 0x0002);
     if (fd_message < 0) {
+        free(buffer);
         return ERROR;
     }
     write(fd_message, buffer, MAX_MEMORY_LENGTH);
@@ -128,6 +129,7 @@ int32_t sgm_send_message(uint32_t message_header_send, uint32_t parameter_count,
      * */
     fd_signal = open(MB_SIGNAL_FILE, 0x0001);
     if (fd_signal < 0) {
+        free(buffer);
         return ERROR;
     }
     memset(buffer, 0x0, MAX_MEMORY_LENGTH);
@@ -141,6 +143,7 @@ int32_t sgm_send_message(uint32_t message_header_send, uint32_t parameter_count,
 
     // non-negative indicates successful completion
     if (ret < 0) {
+        free(buffer);
         return ERROR;
     }
 
@@ -166,40 +169,200 @@ int32_t sgm_send_message(uint32_t message_header_send, uint32_t parameter_count,
             // extract payload
             // plus 1 to skip the Length
             // return_values starts from 0, hence subtract 2 here
-            return_values[(counter - 2)] =  *(header_payload_length + 1 + counter);
+            return_values[(counter - 2)] = *(header_payload_length + 1 + counter);
+            (*return_values_count)++;
         }
     }
-
+    free(buffer);
     return NO_ERROR;
 }
 
 /*!
  * @brief Interface function that waits for
  * delayed response.
- *
- * This is the mocker platform implementation of the receive_platform_response
- * interface which will be called by the test_agent when it is expecting to
- * receive either a delayed_response or notification from the platform over the
- * P2A channel.
- *
  */
 int sgm_wait_for_response(uint32_t *message_header_rcv,
         int32_t *status, size_t *return_values_count, uint32_t *return_values,
         bool *message_ready, uint32_t timeout)
 {
+    /* variables to be used in this function */
+    uint32_t fd_message; // file descriptors for each mailbox interface
+    uint32_t ret = 0; // return polling signal
+    uint8_t *buffer; // pointer to access mailbox memory
+    uint32_t counter;
+    uint32_t *header_payload_length; // pointer to read payload length
+    struct pollfd pfd;
+
+    /* initialise buffer */
+    buffer = (uint8_t *)malloc(MAX_MEMORY_LENGTH);
+    if (buffer == NULL)
+        return ERROR;
+    memset(buffer, 0x0, MAX_MEMORY_LENGTH);
+
+    /* prepare the message to be sent to mailbox driver interfaces in the following order:
+     *      - RESERVED 1 (skipped as it has already been defaulted to zero)
+     *      - CHANNEL STATUS (skipped as it has already been defaulted to zero)
+     *      - RESERVED 2 (skipped as it has already been defaulted to zero)
+     *      - MAILBOX FLAGS (always set to 1 to indicate completion via an interrupt)
+     *      - LENGTH (this will be particularly useful to dertermine the returned payload length)
+     *      - MESSAGE HEADER (as the data passed in)
+     *      - MESSAGE PAYLOAD (used to hold parameter when sending OR return values upon receipt)
+     * */
+
+    buffer[MB_FLAGS] = 0x1; // populating MAILBOX_FLAGS
+
+    /* Send message to the mailbox driver interface
+     * defined by the MB_MESSAGE_FILE macro
+     * */
+    fd_message = open(MB_MESSAGE_FILE, 0x0002);
+    if (fd_message < 0) {
+        free(buffer);
+        return ERROR;
+    }
+
+    /* polling */
+    pfd.fd = fd_message;
+    pfd.revents = POLLIN;
+    ret = poll(&pfd, 1, timeout);
+
+    // non-negative indicates successful completion
+    if (ret < 0) {
+        free(buffer);
+        return ERROR;
+    }
+
+    /* read returned message into the buffer */
+    read(fd_message, buffer, MAX_MEMORY_LENGTH);
+
+    /* Extract bytes using an uint32_t pointer. */
+    header_payload_length = (uint32_t *) &buffer[MB_HEADER_PAYLOAD_LENGTH];
+
+    /* read the payload part */
+    for (counter = 0; counter < (*(header_payload_length) / 4); ++counter) {
+        if (counter == 0) {
+            // extract header
+            // plus 1 to skip the Length
+            *message_header_rcv = *(header_payload_length + 1 + counter);
+        }
+        else if (counter == 1) {
+            // extract status
+            // plus 1 to skip the Length
+            *status = *(header_payload_length + 1 + counter);
+        }
+        else {
+            // extract payload
+            // plus 1 to skip the Length
+            // return_values starts from 0, hence subtract 2 here
+            return_values[(counter - 2)] = *(header_payload_length + 1 + counter);
+            (*return_values_count)++;
+        }
+    }
+
+    free(buffer);
+
     return NO_ERROR;
 }
 
-uint32_t sgm_agent_get_accessible_device(uint32_t agent_id)
+/*!
+ * @brief Interface function that waits for
+ * notification.
+ */
+int sgm_wait_for_notification(uint32_t *message_header_rcv,
+        size_t *return_values_count, uint32_t *return_values,
+        uint32_t timeout)
 {
-   return NO_ERROR;
+    /* variables to be used in this function */
+    uint32_t fd_message; // file descriptors for each mailbox interface
+    uint32_t ret = 0; // return polling signal
+    uint8_t *buffer; // pointer to access mailbox memory
+    uint32_t counter;
+    uint32_t *header_payload_length; // pointer to read payload length
+    struct pollfd pfd;
+
+    /* initialise buffer */
+    buffer = (uint8_t *)malloc(MAX_MEMORY_LENGTH);
+    if (buffer == NULL)
+        return ERROR;
+    memset(buffer, 0x0, MAX_MEMORY_LENGTH);
+
+    /* prepare the message to be sent to mailbox driver interfaces in the following order:
+     *      - RESERVED 1 (skipped as it has already been defaulted to zero)
+     *      - CHANNEL STATUS (skipped as it has already been defaulted to zero)
+     *      - RESERVED 2 (skipped as it has already been defaulted to zero)
+     *      - MAILBOX FLAGS (always set to 1 to indicate completion via an interrupt)
+     *      - LENGTH (this will be particularly useful to dertermine the returned payload length)
+     *      - MESSAGE HEADER (as the data passed in)
+     *      - MESSAGE PAYLOAD (used to hold parameter when sending OR return values upon receipt)
+     * */
+
+    buffer[MB_FLAGS] = 0x1; // populating MAILBOX_FLAGS
+
+    /* Send message to the mailbox driver interface
+     * defined by the MB_MESSAGE_FILE macro
+     * */
+    fd_message = open(MB_MESSAGE_FILE, 0x0002);
+    if (fd_message < 0) {
+        free(buffer);
+        return ERROR;
+    }
+
+    /* polling */
+    pfd.fd = fd_message;
+    pfd.revents = POLLIN;
+    ret = poll(&pfd, 1, timeout);
+
+    // non-negative indicates successful completion
+    if (ret < 0) {
+        free(buffer);
+        return ERROR;
+    }
+
+    /* read returned message into the buffer */
+    read(fd_message, buffer, MAX_MEMORY_LENGTH);
+
+    /* Extract bytes using an uint32_t pointer. */
+    header_payload_length = (uint32_t *) &buffer[MB_HEADER_PAYLOAD_LENGTH];
+
+    /* read the payload part */
+    for (counter = 0; counter < (*(header_payload_length) / 4); ++counter) {
+        if (counter == 0) {
+            // extract header
+            // plus 1 to skip the Length
+            *message_header_rcv = *(header_payload_length + 1 + counter);
+        }
+        else {
+            // extract payload
+            // plus 1 to skip the Length
+            // return_values starts from 0, hence subtract 2 here
+            return_values[(counter - 2)] = *(header_payload_length + 1 + counter);
+            (*return_values_count)++;
+        }
+    }
+
+    free(buffer);
+
+    return NO_ERROR;
 }
 
+/*!
+ * @brief Interface function that gets accessible device for given agent
+ */
+uint32_t sgm_agent_get_accessible_device(uint32_t agent_id)
+{
+    return NO_ERROR;
+}
+
+/*!
+ * @brief Interface function that gets inaccessible device for given agent
+ */
 uint32_t sgm_agent_get_inaccessible_device(uint32_t agent_id)
 {
     return NO_ERROR;
 }
 
+/*!
+ * @brief Interface function that gets protocol which can access given device
+ */
 uint32_t sgm_device_get_accessible_protocol(uint32_t device_id)
 {
     return NO_ERROR;

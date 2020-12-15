@@ -1,5 +1,5 @@
 /** @file
- * Copyright (c) 2019, Arm Limited or its affiliates. All rights reserved.
+ * Copyright (c) 2019-2020, Arm Limited or its affiliates. All rights reserved.
  * SPDX-License-Identifier : Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,32 +15,33 @@
  * limitations under the License.
 **/
 
-#include"val_interface.h"
+#include "val_interface.h"
+#include "val_base.h"
 
 #define TEST_NUM  (SCMI_BASE_TEST_NUM_BASE + 5)
-#define TEST_DESC "Base query implementation version check                "
+#define TEST_DESC "Base query vendor name check                 "
 
-uint32_t base_query_implementation_version(void)
+uint32_t base_query_vendor_name(void)
 {
-    int32_t status;
-    uint32_t rsp_msg_hdr, cmd_msg_hdr;
-    uint32_t param_count, *parameters;
-    uint32_t return_value_count, implementation_version;
+    int32_t  status;
+    uint32_t rsp_msg_hdr;
+    uint32_t cmd_msg_hdr;
+    size_t   param_count;
+    size_t   return_value_count;
+    uint32_t return_values[MAX_RETURNS_SIZE];
+    uint32_t *parameters;
 
     if (val_test_initialize(TEST_NUM, TEST_DESC) != VAL_STATUS_PASS)
         return VAL_STATUS_SKIP;
 
-    /* Check the implementation version */
-
-    val_print(VAL_PRINT_DEBUG, "\n\t[Check 1] Query Implementation Version");
+    /* Check the vendor name */
+    val_print(VAL_PRINT_TEST, "\n     [Check 1] Query vendor name");
 
     VAL_INIT_TEST_PARAM(param_count, rsp_msg_hdr, return_value_count, status);
     parameters = NULL; /* No parameters for this command */
-    implementation_version = 0;
-    cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_BASE, BASE_DISCOVER_IMPLEMENTATION_VERSION,
-                                  COMMAND_MSG);
+    cmd_msg_hdr = val_msg_hdr_create(PROTOCOL_BASE, BASE_DISCOVER_VENDOR, COMMAND_MSG);
     val_send_message(cmd_msg_hdr, param_count, parameters, &rsp_msg_hdr, &status,
-                     &return_value_count, &implementation_version);
+                     &return_value_count, return_values);
 
     if (val_compare_status(status, SCMI_SUCCESS) != VAL_STATUS_PASS)
         return VAL_STATUS_FAIL;
@@ -48,9 +49,14 @@ uint32_t base_query_implementation_version(void)
     if (val_compare_msg_hdr(cmd_msg_hdr, rsp_msg_hdr) != VAL_STATUS_PASS)
         return VAL_STATUS_FAIL;
 
-    /* Save the implementation version */
-    val_print(VAL_PRINT_INFO, "\n\tIMPLEMENTATION_VERSION: %x                              ",
-                implementation_version);
+    val_print_return_values(return_value_count, return_values);
+
+    if (val_compare_str("VENDOR NAME", (char *)&return_values[VENDOR_ID_OFFSET],
+                        val_base_get_expected_vendor_name(), SCMI_NAME_STR_SIZE))
+        return VAL_STATUS_FAIL;
+
+    /* Save the vendor name */
+    val_base_save_name(BASE_VENDOR_NAME, (uint8_t *)&return_values[VENDOR_ID_OFFSET]);
 
     return VAL_STATUS_PASS;
 }
