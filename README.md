@@ -1,5 +1,5 @@
 
-# System Control and Management Interface - Compliance Suite
+# System Control and  Interface - Compliance Suite
 
 ## Introduction
 **System Control and Management Interface** (SCMI)  is a set of Operating System-independent software interfaces that are used in system management.
