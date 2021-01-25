@@ -145,13 +145,17 @@ uint32_t pal_initialize_system(void *info)
 }
 
 /**
+  @brief Printing buffer
+**/
+static char p_str[LOG_STR_SIZE];
+
+/**
   @brief   This API is used to print test log
   @param   args values to be printed
   @return  none
 **/
 void pal_print(uint32_t print_level, const char *format, va_list args)
 {
-    char p_str[LOG_STR_SIZE];
-    vsprintf(p_str, format, args);
+    vsnprintf(p_str, LOG_STR_SIZE, format, args);
     arm_scmi_log_output(p_str);
 }

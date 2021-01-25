@@ -46,7 +46,7 @@ uint32_t system_power_state_notify_invalid_parameters(void)
     val_send_message(cmd_msg_hdr, param_count, &message_id, &rsp_msg_hdr, &status,
                      &return_value_count, return_values);
 
-    if (status == SCMI_NOT_FOUND) {
+    if (val_compare_status(status, SCMI_NOT_SUPPORTED) == VAL_STATUS_PASS) {
         val_print(VAL_PRINT_ERR, "\n       SYSTEM POWER STATE NOTIFY not supported     ");
         return VAL_STATUS_SKIP;
     }
