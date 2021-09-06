@@ -1,6 +1,11 @@
 
 # System Control and Management Interface - Compliance Suite
 
+
+## NOTE
+
+This repository has moved to a new location. Visit https://gitlab.arm.com/tests/scmi-tests for the latest updates.
+
 ## Introduction
 **System Control and Management Interface** (SCMI)  is a set of Operating System-independent software interfaces that are used in system management.
 
